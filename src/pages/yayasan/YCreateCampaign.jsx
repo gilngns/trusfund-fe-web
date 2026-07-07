@@ -3,12 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, BrainCircuit, Save, Loader2, Info, PlusCircle, Trash2, Calendar, UploadCloud, X } from "lucide-react";
 import { campaignApi } from "../../api/client";
 import { rp } from "../../api/format";
-import { useToast } from "../../context/ToastContext";
 
 export default function YCreateCampaign() {
   const navigate = useNavigate();
-  const toast = useToast();
-  
   const [step, setStep] = useState(1);
   const [activeTab, setActiveTab] = useState("basic"); // "basic" | "rab"
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -37,12 +34,12 @@ export default function YCreateCampaign() {
   const handleAnalyze = async () => {
     try {
       if (!formData.targetAmount || rabItems.length === 0) {
-        return toast("Lengkapi target dana dan minimal 1 item RAB", "error");
+        return alert("Lengkapi target dana dan minimal 1 item RAB");
       }
       
       // Validasi item kosong
       if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0)) {
-        return toast("Pastikan semua baris RAB diisi dengan benar", "error");
+        return alert("Pastikan semua baris RAB diisi dengan benar");
       }
 
       setIsAnalyzing(true);
@@ -53,10 +50,9 @@ export default function YCreateCampaign() {
       });
 
       setPlanResult(res.plan);
-      toast("Analisis AI selesai!", "success");
       setStep(2);
     } catch (e) {
-      toast(e.message, "error");
+      alert(e.message);
     } finally {
       setIsAnalyzing(false);
     }
@@ -65,8 +61,17 @@ export default function YCreateCampaign() {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      // Generate a mock onChainId for now, usually done by wallet connection or backend
       const onChainId = `CMP-${Date.now()}`;
+      
+      let finalImageUrl = formData.imageUrl;
+      if (formData.imageFile) {
+        finalImageUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(formData.imageFile);
+        });
+      }
       
       await campaignApi.create({
         onChainId,
@@ -75,17 +80,16 @@ export default function YCreateCampaign() {
         targetAmount: Number(formData.targetAmount),
         durationDays: Number(formData.durationDays),
         category: formData.category,
-        imageUrl: formData.imageUrl,
+        imageUrl: finalImageUrl,
         advanceAmount: planResult.advanceAmount,
         milestoneAmount: planResult.milestoneAmount,
         totalMilestones: planResult.totalMilestones,
         rabCID: "QmTestRabData123", // Mock CID
       });
 
-      toast("Kampanye berhasil dibuat!", "success");
-      navigate("/y/campaigns");
+      setStep(3);
     } catch (e) {
-      toast(e.message, "error");
+      alert(e.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -125,6 +129,13 @@ export default function YCreateCampaign() {
               <div>
                 <div className={`font-bold ${step >= 2 ? 'text-slate-800' : 'text-slate-500'}`}>Analisis AI</div>
                 <div className="text-xs text-slate-500 mt-0.5">Review struktur dana</div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 relative z-10">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 ${step >= 3 ? 'bg-teal-500 border-teal-500 text-white' : 'bg-white border-slate-300 text-slate-400'}`}>3</div>
+              <div>
+                <div className={`font-bold ${step >= 3 ? 'text-slate-800' : 'text-slate-500'}`}>Selesai</div>
+                <div className="text-xs text-slate-500 mt-0.5">Siap publikasi</div>
               </div>
             </div>
           </div>
@@ -214,7 +225,7 @@ export default function YCreateCampaign() {
                             const file = e.target.files[0];
                             if (file) {
                               if (!file.type.startsWith("image/")) {
-                                toast("Format file tidak didukung. Harap unggah foto/gambar.", "error");
+                                alert("Format file tidak didukung. Harap unggah foto/gambar.");
                                 e.target.value = "";
                                 return;
                               }
@@ -427,6 +438,25 @@ export default function YCreateCampaign() {
                 </button>
               </div>
             </>
+          )}
+
+          {step === 3 && (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in-95 duration-500 bg-slate-50/50">
+              <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mb-8 shadow-xl shadow-emerald-500/20 relative">
+                <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20"></div>
+                <CheckCircle2 size={48} />
+              </div>
+              <h2 className="text-3xl font-black text-slate-800 mb-4">Hore! Kampanye Berhasil Dibuat</h2>
+              <p className="text-slate-500 mb-10 max-w-md mx-auto leading-relaxed text-sm">
+                Kampanye penggalangan dana Anda kini telah dicatat di Smart Contract dan siap menerima donasi transparan dari para dermawan.
+              </p>
+              <button 
+                onClick={() => navigate("/y/campaigns")}
+                className="px-8 py-3.5 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-all shadow-lg shadow-teal-500/30 flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
+              >
+                Lihat Daftar Kampanye
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -1,11 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { ClipboardCheck, Zap, AlertTriangle, ArrowRight, ShieldCheck, CheckCircle2, X, FileSearch } from "lucide-react";
 import { campaignApi } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
 import { rp } from "../../api/format";
 
 export default function Campaigns() {
-  const toast = useToast();
   const [campaigns, setCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAllApprovals, setShowAllApprovals] = useState(false);
@@ -17,11 +15,11 @@ export default function Campaigns() {
       const d = await campaignApi.list();
       setCampaigns(d.campaigns || []);
     } catch (e) {
-      toast(e.message, "error");
+      alert("Gagal memuat kampanye: " + e.message);
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     load();

@@ -1,11 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { campaignApi } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
 import { rp } from "../../api/format";
 import { Button, Empty, Loading, Card } from "../../components/ui";
 
 export default function Frozen() {
-  const toast = useToast();
   const [list, setList] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
@@ -14,10 +12,10 @@ export default function Frozen() {
       const d = await campaignApi.list("FROZEN");
       setList(d.campaigns || []);
     } catch (e) {
-      toast(e.message, "error");
+      alert(e.message);
       setList([]);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -27,10 +25,10 @@ export default function Frozen() {
     setBusyId(c.id);
     try {
       await campaignApi.resolveFrozen(c.id, approve);
-      toast(approve ? "Kampanye dilanjutkan." : "Refund diaktifkan untuk donatur.");
+      alert(approve ? "Kampanye dilanjutkan." : "Refund diaktifkan untuk donatur.");
       load();
     } catch (e) {
-      toast(e.message, "error");
+      alert(e.message);
     } finally {
       setBusyId(null);
     }

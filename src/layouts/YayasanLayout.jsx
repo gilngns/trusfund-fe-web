@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { notificationApi } from "../api/client";
 import { 
   LayoutDashboard, Wallet, Megaphone, Calculator, Users, Settings,
-  Menu, Search, Bell, LogOut, User, AlertTriangle, CheckCircle2, Info 
+  Menu, Search, Bell, LogOut, User, AlertTriangle, CheckCircle2, Info, Clock
 } from "lucide-react";
 
 const NAV = [
@@ -93,143 +93,180 @@ export default function YayasanLayout({ children }) {
             <Menu size={20} />
           </button>
           <div className="font-extrabold text-xl tracking-tight text-slate-900 sm:ml-4 md:ml-0 flex items-center gap-2">
-            <span className="text-teal-600">Yayasan</span>Portal.
+            <span className="text-teal-600">TrustFund</span>
           </div>
         </div>
-        <div className="flex items-center gap-5">
-          <div className="relative group hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search data..." 
-              style={{ color: "#0f172a" }}
-              className="pl-9 pr-4 py-1.5 bg-slate-100/50 border border-transparent rounded-md text-sm outline-none focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 w-[240px] transition-all duration-200 placeholder:text-slate-400" 
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="relative" ref={notifRef}>
-              <button 
-                onClick={() => {
-                  setIsNotifOpen(!isNotifOpen);
-                  if (unreadCount > 0) {
-                    markAllAsRead();
-                  }
-                }}
-                className="relative p-1.5 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-100"
-              >
-                <Bell size={18} />
-                {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>}
-              </button>
-              
-              {isNotifOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 animate-fade-in-up [animation-duration:200ms]">
-                  <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center mb-1">
-                    <h3 className="text-sm font-bold text-slate-800">Notifications</h3>
-                    {unreadCount > 0 && <span className="text-[10px] font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full">{unreadCount} New</span>}
-                  </div>
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <div className="px-4 py-6 text-center text-xs text-slate-400 font-medium">No notifications yet.</div>
-                    ) : (
-                      notifications.map(n => {
-                        const Icon = n.type === 'SUCCESS' ? CheckCircle2 : n.type === 'WARNING' ? AlertTriangle : n.type === 'USER' ? User : Info;
-                        const iconBg = n.type === 'SUCCESS' ? 'bg-emerald-50 text-emerald-500' : n.type === 'WARNING' ? 'bg-yellow-50 text-yellow-500' : n.type === 'USER' ? 'bg-blue-50 text-blue-500' : 'bg-slate-100 text-slate-500';
-                        
-                        // Parse date relatively (simple logic)
-                        const d = new Date(n.createdAt);
-                        const mins = Math.floor((new Date() - d) / 60000);
-                        const timeStr = mins < 60 ? `${mins || 1} menit yang lalu` : mins < 1440 ? `${Math.floor(mins / 60)} jam yang lalu` : `${Math.floor(mins / 1440)} hari yang lalu`;
-                        
-                        return (
-                          <div key={n.id} onClick={() => markAsRead(n.id, n.isRead)} className={`px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 cursor-pointer flex gap-3 ${!n.isRead ? 'bg-slate-50/50' : ''}`}>
-                            <div className={`w-8 h-8 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
-                              <Icon size={14} />
-                            </div>
-                            <div>
-                              <p className="text-[13px] text-slate-700 font-medium leading-snug">{n.message}</p>
-                              <p className="text-[10px] font-semibold text-slate-400 mt-1">{timeStr}</p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                  <div className="px-4 pt-2 border-t border-slate-100">
-                    <button className="w-full text-center text-xs font-bold text-teal-600 hover:text-teal-700 py-1 transition-colors">View All Activity</button>
-                  </div>
-                </div>
-              )}
+        {user?.isVerified !== false && (
+          <div className="flex items-center gap-5">
+            <div className="relative group hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search data..." 
+                style={{ color: "#0f172a" }}
+                className="pl-9 pr-4 py-1.5 bg-slate-100/50 border border-transparent rounded-md text-sm outline-none focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 w-[240px] transition-all duration-200 placeholder:text-slate-400" 
+              />
             </div>
-            <div className="h-5 w-[1px] bg-slate-200"></div>
-            <div className="relative" ref={profileRef}>
-              <div 
-                className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-bold cursor-pointer hover:bg-slate-700 transition-colors select-none" 
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                title={user?.name}
-              >
-                {getInitials(user?.name)}
+            <div className="flex items-center gap-4">
+              <div className="relative" ref={notifRef}>
+                <button 
+                  onClick={() => {
+                    setIsNotifOpen(!isNotifOpen);
+                    if (unreadCount > 0) {
+                      markAllAsRead();
+                    }
+                  }}
+                  className="relative p-1.5 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-100"
+                >
+                  <Bell size={18} />
+                  {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>}
+                </button>
+                
+                {isNotifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 animate-fade-in-up [animation-duration:200ms]">
+                    <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center mb-1">
+                      <h3 className="text-sm font-bold text-slate-800">Notifications</h3>
+                      {unreadCount > 0 && <span className="text-[10px] font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full">{unreadCount} New</span>}
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-xs text-slate-400 font-medium">No notifications yet.</div>
+                      ) : (
+                        notifications.map(n => {
+                          const Icon = n.type === 'SUCCESS' ? CheckCircle2 : n.type === 'WARNING' ? AlertTriangle : n.type === 'USER' ? User : Info;
+                          const iconBg = n.type === 'SUCCESS' ? 'bg-emerald-50 text-emerald-500' : n.type === 'WARNING' ? 'bg-yellow-50 text-yellow-500' : n.type === 'USER' ? 'bg-blue-50 text-blue-500' : 'bg-slate-100 text-slate-500';
+                          
+                          // Parse date relatively (simple logic)
+                          const d = new Date(n.createdAt);
+                          const mins = Math.floor((new Date() - d) / 60000);
+                          const timeStr = mins < 60 ? `${mins || 1} menit yang lalu` : mins < 1440 ? `${Math.floor(mins / 60)} jam yang lalu` : `${Math.floor(mins / 1440)} hari yang lalu`;
+                          
+                          return (
+                            <div key={n.id} onClick={() => markAsRead(n.id, n.isRead)} className={`px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 cursor-pointer flex gap-3 ${!n.isRead ? 'bg-slate-50/50' : ''}`}>
+                              <div className={`w-8 h-8 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
+                                <Icon size={14} />
+                              </div>
+                              <div>
+                                <p className="text-[13px] text-slate-700 font-medium leading-snug">{n.message}</p>
+                                <p className="text-[10px] font-semibold text-slate-400 mt-1">{timeStr}</p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    <div className="px-4 pt-2 border-t border-slate-100">
+                      <button className="w-full text-center text-xs font-bold text-teal-600 hover:text-teal-700 py-1 transition-colors">View All Activity</button>
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-fade-in-up [animation-duration:200ms]">
-                  <div className="px-4 py-2.5 border-b border-slate-100/80 mb-1">
-                    <p className="text-sm font-bold text-slate-800 truncate">{user?.name || "Yayasan User"}</p>
-                    <p className="text-[11px] font-medium text-slate-500 mt-0.5 truncate">{user?.email || "yayasan@trustfund.com"}</p>
-                  </div>
-                  
-                  <div className="px-1.5">
-                    <button 
-                      className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center gap-2 font-semibold rounded-md"
-                    >
-                      <User size={14} className="text-slate-400" />
-                      Profil Yayasan
-                    </button>
-                    <button 
-                      onClick={logout}
-                      className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center gap-2 font-semibold rounded-md mt-0.5"
-                    >
-                      <LogOut size={14} />
-                      Logout
-                    </button>
-                  </div>
+              <div className="h-5 w-[1px] bg-slate-200"></div>
+              <div className="relative" ref={profileRef}>
+                <div 
+                  className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-bold cursor-pointer hover:bg-slate-700 transition-colors select-none" 
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  title={user?.name}
+                >
+                  {getInitials(user?.name)}
                 </div>
-              )}
+                
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-fade-in-up [animation-duration:200ms]">
+                    <div className="px-4 py-2.5 border-b border-slate-100/80 mb-1">
+                      <p className="text-sm font-bold text-slate-800 truncate">{user?.name || "Yayasan User"}</p>
+                      <p className="text-[11px] font-medium text-slate-500 mt-0.5 truncate">{user?.email || "yayasan@trustfund.com"}</p>
+                    </div>
+                    
+                    <div className="px-1.5">
+                      <button 
+                        className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center gap-2 font-semibold rounded-md"
+                      >
+                        <User size={14} className="text-slate-400" />
+                        Profil Yayasan
+                      </button>
+                      <button 
+                        onClick={logout}
+                        className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center gap-2 font-semibold rounded-md mt-0.5"
+                      >
+                        <LogOut size={14} />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-[260px] bg-white flex flex-col py-6 shrink-0 border-r border-slate-200 hidden md:flex">
-          <div className="px-5 mb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Portal Yayasan</div>
-          <nav className="flex flex-col px-3 gap-1">
-            {NAV.map((n) => (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors ${
-                    isActive 
-                      ? "bg-teal-50 text-teal-700" 
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <n.icon size={18} className={isActive ? 'text-teal-600' : 'text-slate-400'} />
-                    {n.label}
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-        </aside>
+        {user?.isVerified !== false && (
+          <aside className="w-[260px] bg-white flex flex-col py-6 shrink-0 border-r border-slate-200 hidden md:flex">
+            <div className="px-5 mb-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Portal Yayasan</div>
+            <nav className="flex flex-col px-3 gap-1">
+              {NAV.map((n) => (
+                <NavLink
+                  key={n.to}
+                  to={n.to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors ${
+                      isActive 
+                        ? "bg-teal-50 text-teal-700" 
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <n.icon size={18} className={isActive ? 'text-teal-600' : 'text-slate-400'} />
+                      {n.label}
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </nav>
+          </aside>
+        )}
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto p-8 bg-slate-50/50">
-          {children}
+        <main className={`flex-1 overflow-auto bg-slate-50/50 ${user?.isVerified === false ? 'p-4' : 'p-8'}`}>
+          {user?.isVerified === false ? (
+            <div className="h-full w-full flex items-center justify-center">
+              <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center animate-in fade-in zoom-in-95 duration-500">
+                <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Clock size={36} className="text-amber-500 animate-pulse" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-800 mb-3">Verifikasi Sedang Diproses</h2>
+                <p className="text-slate-500 text-sm leading-relaxed mb-8">
+                  Akun yayasan Anda sedang dalam antrean proses verifikasi oleh Dinas Sosial. 
+                  Anda akan mendapatkan akses penuh ke portal setelah dokumen Anda divalidasi.
+                </p>
+                  <div className="bg-slate-50 rounded-xl p-4 text-left border border-slate-100 mb-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Info size={16} className="text-slate-400" />
+                      <span className="text-sm font-bold text-slate-700">Tahap Berikutnya</span>
+                    </div>
+                    <ul className="text-xs text-slate-500 space-y-2 ml-7 list-disc">
+                      <li>Pengecekan SK Kemenkumham</li>
+                      <li>Validasi Rekening Bank</li>
+                      <li>Persetujuan Akses Portal</li>
+                    </ul>
+                  </div>
+                  <button 
+                    onClick={logout}
+                    className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <LogOut size={16} />
+                    Keluar dari Akun
+                  </button>
+                </div>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>

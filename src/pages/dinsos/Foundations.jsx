@@ -1,11 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { authApi } from "../../api/client";
-import { useToast } from "../../context/ToastContext";
 import Swal from "sweetalert2";
 import { CheckCircle2, Clock, ShieldCheck, FileText, X, ExternalLink, Mail, ShieldAlert, Building2, Search } from "lucide-react";
 
 export default function Foundations() {
-  const toast = useToast();
   const [list, setList] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [busyId, setBusyId] = useState(null);
@@ -16,10 +14,10 @@ export default function Foundations() {
       const d = await authApi.listFoundations();
       setList(d.foundations || []);
     } catch (e) {
-      toast(e.message, "error");
+      alert("Gagal memuat yayasan: " + e.message);
       setList([]);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -42,18 +40,10 @@ export default function Foundations() {
     setBusyId(id);
     try {
       await authApi.verifyFoundation(id);
-      Swal.fire(
-        'Berhasil!',
-        'Yayasan telah diverifikasi.',
-        'success'
-      );
+      alert("Yayasan berhasil diverifikasi!");
       load();
     } catch (e) {
-      Swal.fire(
-        'Gagal!',
-        e.message,
-        'error'
-      );
+      alert("Gagal verifikasi: " + e.message);
     } finally {
       setBusyId(null);
     }
@@ -258,7 +248,10 @@ export default function Foundations() {
                         <FileText size={14} className="text-blue-500" /> SK Kemenkumham
                       </div>
                       {selectedFoundation.skKemenkumham ? (
-                        <button className="text-[11px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded flex items-center gap-1 hover:bg-teal-100 transition-colors">
+                        <button 
+                          onClick={() => window.open(selectedFoundation.skKemenkumham, '_blank')}
+                          className="text-[11px] font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded flex items-center gap-1 hover:bg-teal-100 transition-colors"
+                        >
                           Lihat <ExternalLink size={10} />
                         </button>
                       ) : (

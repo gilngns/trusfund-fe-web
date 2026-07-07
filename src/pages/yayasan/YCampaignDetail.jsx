@@ -3,12 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, CircleDashed, Users, Target, Activity, Check, Banknote, HelpCircle, Camera, Loader2 } from "lucide-react";
 import { campaignApi } from "../../api/client";
 import { rp } from "../../api/format";
-import { useToast } from "../../context/ToastContext";
 
 export default function YCampaignDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const toast = useToast();
   
   const [campaign, setCampaign] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +18,7 @@ export default function YCampaignDetail() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast("Harap pilih file gambar", "error");
+      alert("Harap pilih file gambar");
       return;
     }
 
@@ -32,9 +30,9 @@ export default function YCampaignDetail() {
         const base64Image = reader.result;
         await campaignApi.updateImage(id, base64Image);
         setCampaign(prev => ({ ...prev, imageUrl: base64Image }));
-        toast("Foto kampanye berhasil diperbarui!", "success");
+        alert("Foto kampanye berhasil diperbarui!");
       } catch (err) {
-        toast(err.message || "Gagal mengunggah gambar", "error");
+        alert(err.message || "Gagal mengunggah gambar");
       } finally {
         setIsUploadingImage(false);
       }
@@ -47,12 +45,12 @@ export default function YCampaignDetail() {
       const res = await campaignApi.getById(id);
       setCampaign(res.campaign || res); // Depending on response structure
     } catch (e) {
-      toast("Gagal memuat detail kampanye: " + e.message, "error");
+      alert("Gagal memuat detail kampanye: " + e.message);
       navigate("/y/campaigns");
     } finally {
       setIsLoading(false);
     }
-  }, [id, toast, navigate]);
+  }, [id, navigate]);
 
   useEffect(() => {
     load();

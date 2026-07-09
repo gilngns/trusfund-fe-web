@@ -27,36 +27,6 @@ This dashboard supports multiple roles out of the box, offering specialized view
 - **Charts**: Recharts
 - **Map**: Pigeon Maps
 
-## 🚀 Getting Started
-
-Follow these steps to run the project locally:
-
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-2. **Configure Environment Variables**
-   Create a `.env` file in the root directory (you can copy from `.env.example`).
-   ```env
-   # API Prefix used by Vite Proxy
-   VITE_API_BASE=/api
-   
-   # Target URL of the backend server
-   API_TARGET_URL=https://nextrust.my.id
-   ```
-
-3. **Run Development Server**
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:5173` in your browser.
-
-4. **Build for Production**
-   ```bash
-   npm run build
-   ```
-
 ## 📂 Project Structure
 
 ```text

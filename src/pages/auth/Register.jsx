@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import { authApi } from "../../api/client";
+import { authApi, api } from "../../api/client";
 import "./Login.css";
 
 export default function Register() {
@@ -10,7 +10,7 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
-    skKemenkumham: "",
+    skKemenkumhamFile: null,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
@@ -27,14 +27,26 @@ export default function Register() {
     setMsg("");
     setBusy(true);
     try {
+      let skUrl = "";
+      if (form.skKemenkumhamFile) {
+        setMsg("Mengupload dokumen SK Kemenkumham...");
+        const uploadRes = await api.upload("/upload", form.skKemenkumhamFile);
+        skUrl = uploadRes.url;
+      }
+
+      setMsg("Memproses pendaftaran...");
       await authApi.register({
-        ...form,
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        skKemenkumham: skUrl || undefined,
         role: "FOUNDATION",
       });
       setMsg("Registrasi berhasil! Silakan tunggu verifikasi Dinsos sebelum membuat kampanye.");
       setTimeout(() => navigate("/login"), 3000);
     } catch (e) {
       setErr(e.message);
+      setMsg("");
     } finally {
       setBusy(false);
     }
@@ -101,17 +113,13 @@ export default function Register() {
           </div>
 
           <div className="form-group">
-            <label>SK Kemenkumham (URL/Link)</label>
+            <label>SK Kemenkumham (Upload File)</label>
             <input
-              type="text"
+              type="file"
               name="skKemenkumham"
-              value={form.skKemenkumham}
-              placeholder="Link dokumen SK Kemenkumham"
-              onChange={handleChange}
+              accept=".pdf,.png,.jpg,.jpeg"
+              onChange={(e) => setForm({ ...form, skKemenkumhamFile: e.target.files[0] })}
             />
-            <small style={{ color: "#888", fontSize: "12px", marginTop: "4px", display: "block" }}>
-              *Opsional saat mendaftar, tapi wajib untuk verifikasi Dinsos
-            </small>
           </div>
 
 

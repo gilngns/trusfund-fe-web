@@ -7,6 +7,7 @@ import { rp } from "../../api/format";
 export default function YCampaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState("ALL");
 
   const load = useCallback(async () => {
     try {
@@ -24,6 +25,8 @@ export default function YCampaigns() {
     load();
   }, [load]);
 
+  const filteredCampaigns = campaigns.filter(c => filter === "ALL" || c.status === filter);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -35,6 +38,33 @@ export default function YCampaigns() {
           <Plus size={16} />
           Buat Kampanye Baru
         </Link>
+      </div>
+
+      <div className="flex border-b border-slate-200">
+        <button 
+          onClick={() => setFilter("ALL")}
+          className={`px-5 py-3 text-sm font-bold transition-all border-b-2 ${filter === "ALL" ? "border-teal-500 text-teal-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+        >
+          Semua
+        </button>
+        <button 
+          onClick={() => setFilter("ACTIVE")}
+          className={`px-5 py-3 text-sm font-bold transition-all border-b-2 ${filter === "ACTIVE" ? "border-teal-500 text-teal-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+        >
+          Aktif
+        </button>
+        <button 
+          onClick={() => setFilter("EVALUATING")}
+          className={`px-5 py-3 text-sm font-bold transition-all border-b-2 ${filter === "EVALUATING" ? "border-teal-500 text-teal-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+        >
+          Butuh Persetujuan
+        </button>
+        <button 
+          onClick={() => setFilter("FROZEN")}
+          className={`px-5 py-3 text-sm font-bold transition-all border-b-2 ${filter === "FROZEN" ? "border-teal-500 text-teal-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+        >
+          Ditolak
+        </button>
       </div>
 
       {isLoading ? (
@@ -57,16 +87,16 @@ export default function YCampaigns() {
             </div>
           ))}
         </div>
-      ) : campaigns.length === 0 ? (
+      ) : filteredCampaigns.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
-          <p className="text-slate-500 font-medium">Belum ada kampanye yang dibuat.</p>
+          <p className="text-slate-500 font-medium">Tidak ada kampanye untuk kategori ini.</p>
           <Link to="/y/campaigns/create" className="inline-block mt-4 px-4 py-2 bg-teal-50 text-teal-600 font-semibold rounded-lg hover:bg-teal-100 transition-colors text-sm">
             Mulai Penggalangan Dana
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campaigns.map((c) => {
+          {filteredCampaigns.map((c) => {
             // Mock or calculate missing data for UI
             const target = Number(c.targetAmount) || 0;
             const collected = c.collectedAmount ? Number(c.collectedAmount) : 0; // if backend provides it
@@ -86,6 +116,7 @@ export default function YCampaigns() {
                 donors={donors}
                 daysLeft={30} // Placeholder for now
                 isCompleted={isCompleted}
+                status={c.status}
               />
             );
           })}
@@ -95,7 +126,7 @@ export default function YCampaigns() {
   );
 }
 
-function CampaignCard({ id, title, image, target, collected, percentage, donors, daysLeft, isCompleted }) {
+function CampaignCard({ id, title, image, target, collected, percentage, donors, daysLeft, isCompleted, status }) {
   return (
     <Link to={`/y/campaigns/${id}`} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col">
       <div className="relative h-48 w-full bg-slate-100 overflow-hidden flex items-center justify-center">
@@ -104,11 +135,23 @@ function CampaignCard({ id, title, image, target, collected, percentage, donors,
         ) : (
           <span className="text-slate-400 text-sm font-semibold">Belum ada foto</span>
         )}
-        {isCompleted && (
+        {isCompleted ? (
           <div className="absolute top-3 left-3 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-sm">
             Target Tercapai
           </div>
-        )}
+        ) : status === "ACTIVE" ? (
+          <div className="absolute top-3 left-3 px-3 py-1 bg-teal-500 text-white text-xs font-bold rounded-full shadow-sm">
+            Aktif
+          </div>
+        ) : status === "EVALUATING" ? (
+          <div className="absolute top-3 left-3 px-3 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow-sm">
+            Dievaluasi
+          </div>
+        ) : status === "FROZEN" ? (
+          <div className="absolute top-3 left-3 px-3 py-1 bg-rose-500 text-white text-xs font-bold rounded-full shadow-sm">
+            Ditolak
+          </div>
+        ) : null}
         <button className="absolute top-3 right-3 p-1.5 bg-white/90 text-slate-600 rounded-md shadow-sm hover:bg-white transition-colors">
           <MoreHorizontal size={16} />
         </button>

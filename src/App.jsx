@@ -14,6 +14,7 @@ import YCampaigns from "./pages/yayasan/YCampaigns";
 import YCreateCampaign from "./pages/yayasan/YCreateCampaign";
 import YCampaignDetail from "./pages/yayasan/YCampaignDetail";
 import YRAB from "./pages/yayasan/YRAB";
+import YRABDetail from "./pages/yayasan/YRABDetail";
 import YBeneficiaries from "./pages/yayasan/YBeneficiaries";
 import YSettings from "./pages/yayasan/YSettings";
 
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="/y/campaigns/create" element={<ProtectedYayasan><YCreateCampaign /></ProtectedYayasan>} />
         <Route path="/y/campaigns/:id" element={<ProtectedYayasan><YCampaignDetail /></ProtectedYayasan>} />
         <Route path="/y/rab" element={<ProtectedYayasan><YRAB /></ProtectedYayasan>} />
+        <Route path="/y/rab/:id" element={<ProtectedYayasan><YRABDetail /></ProtectedYayasan>} />
         <Route path="/y/beneficiaries" element={<ProtectedYayasan><YBeneficiaries /></ProtectedYayasan>} />
         <Route path="/y/settings" element={<ProtectedYayasan><YSettings /></ProtectedYayasan>} />
 

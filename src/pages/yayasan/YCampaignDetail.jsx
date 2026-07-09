@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, CircleDashed, Users, Target, Activity, Check, Banknote, HelpCircle, Camera, Loader2 } from "lucide-react";
+import Swal from "sweetalert2";
 import { campaignApi } from "../../api/client";
 import { rp } from "../../api/format";
 
@@ -18,7 +19,7 @@ export default function YCampaignDetail() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Harap pilih file gambar");
+      Swal.fire("Peringatan", "Harap pilih file gambar", "warning");
       return;
     }
 
@@ -30,9 +31,9 @@ export default function YCampaignDetail() {
         const base64Image = reader.result;
         await campaignApi.updateImage(id, base64Image);
         setCampaign(prev => ({ ...prev, imageUrl: base64Image }));
-        alert("Foto kampanye berhasil diperbarui!");
+        Swal.fire("Berhasil!", "Foto kampanye berhasil diperbarui!", "success");
       } catch (err) {
-        alert(err.message || "Gagal mengunggah gambar");
+        Swal.fire("Error", err.message || "Gagal mengunggah gambar", "error");
       } finally {
         setIsUploadingImage(false);
       }
@@ -45,7 +46,7 @@ export default function YCampaignDetail() {
       const res = await campaignApi.getById(id);
       setCampaign(res.campaign || res); // Depending on response structure
     } catch (e) {
-      alert("Gagal memuat detail kampanye: " + e.message);
+      Swal.fire("Error", "Gagal memuat detail kampanye: " + e.message, "error");
       navigate("/y/campaigns");
     } finally {
       setIsLoading(false);

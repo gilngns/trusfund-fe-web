@@ -14,7 +14,7 @@ export default function Foundations() {
       const d = await authApi.listFoundations();
       setList(d.foundations || []);
     } catch (e) {
-      alert("Gagal memuat yayasan: " + e.message);
+      Swal.fire("Error", "Gagal memuat yayasan: " + e.message, "error");
       setList([]);
     }
   }, []);
@@ -40,10 +40,10 @@ export default function Foundations() {
     setBusyId(id);
     try {
       await authApi.verifyFoundation(id);
-      alert("Yayasan berhasil diverifikasi!");
+      Swal.fire("Berhasil!", "Yayasan berhasil diverifikasi!", "success");
       load();
     } catch (e) {
-      alert("Gagal verifikasi: " + e.message);
+      Swal.fire("Gagal", "Gagal verifikasi: " + e.message, "error");
     } finally {
       setBusyId(null);
     }

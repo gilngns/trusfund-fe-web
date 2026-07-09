@@ -1,79 +1,119 @@
-import { Calculator, Sparkles, FileText, Download, Plus, AlertCircle } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { FileText, Download } from "lucide-react";
+import { Link } from "react-router-dom";
+import { campaignApi } from "../../api/client";
+import { rp } from "../../api/format";
 
 export default function YRAB() {
+  const [campaigns, setCampaigns] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await campaignApi.list();
+      setCampaigns(res.campaigns || []);
+    } catch (e) {
+      console.error("Failed to load campaigns:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Rencana Anggaran Biaya (RAB)</h1>
-          <p className="text-slate-500 mt-1">Buat, kelola, dan tracking pengeluaran kampanye Anda.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 font-semibold rounded-lg hover:bg-indigo-100 transition-colors shadow-sm text-sm border border-indigo-100">
-            <Sparkles size={16} />
-            Generate via AI
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors shadow-sm text-sm">
-            <Plus size={16} />
-            Buat RAB Manual
-          </button>
+          <h1 className="text-xl font-bold text-slate-800">Rencana Anggaran Biaya (RAB)</h1>
+          <p className="text-sm text-slate-500 mt-1">Daftar dan detail Rencana Anggaran Biaya kampanye Anda.</p>
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3">
-        <AlertCircle className="text-blue-500 shrink-0 mt-0.5" size={20} />
-        <div>
-          <h4 className="text-sm font-bold text-blue-900">Integrasi AI Aktif</h4>
-          <p className="text-sm text-blue-700 mt-1">Sistem AI Microservice siap digunakan. Anda dapat melakukan generate draf RAB secara otomatis dengan memberikan detail program kampanye.</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800">Daftar Dokumen RAB</h2>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-200 bg-slate-50/50">
+          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Daftar Dokumen RAB</h2>
         </div>
         
         <div className="divide-y divide-slate-100">
-          <RABItem title="RAB Pembangunan Sumur NTT" status="approved" total="Rp 80.000.000" date="Dibuat: 10 Sep 2026" />
-          <RABItem title="RAB Bantuan Bencana Gempa" status="draft" total="Rp 100.000.000" date="Dibuat: 12 Okt 2026" />
+          {isLoading ? (
+            <div className="animate-pulse divide-y divide-slate-100">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-slate-200 shrink-0"></div>
+                    <div>
+                      <div className="h-4 w-48 bg-slate-200 rounded mb-2"></div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-3 w-24 bg-slate-200 rounded"></div>
+                        <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                        <div className="h-3 w-16 bg-slate-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                    <div className="h-5 w-16 bg-slate-200 rounded"></div>
+                    <div className="h-7 w-24 bg-slate-200 rounded-md"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="p-8 text-center text-sm text-slate-500">Tidak ada dokumen RAB.</div>
+          ) : (
+            campaigns.map((c) => (
+              <RABItem 
+                key={c.id}
+                id={c.id}
+                title={`RAB ${c.title}`} 
+                status={c.status} 
+                total={rp(c.targetAmount)} 
+                date={`Dibuat: ${new Date(c.createdAt).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}`} 
+              />
+            ))
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function RABItem({ title, status, total, date }) {
+function RABItem({ id, title, status, total, date }) {
+  let statusBadge = null;
+  const badgeClasses = "px-2 py-0.5 rounded text-[10px] font-bold border";
+  
+  if (status === 'ACTIVE') statusBadge = <span className={`${badgeClasses} bg-teal-50 text-teal-600 border-teal-100`}>Aktif</span>;
+  else if (status === 'EVALUATING') statusBadge = <span className={`${badgeClasses} bg-amber-50 text-amber-600 border-amber-100`}>Evaluasi</span>;
+  else if (status === 'FROZEN') statusBadge = <span className={`${badgeClasses} bg-rose-50 text-rose-600 border-rose-100`}>Ditolak</span>;
+  else if (status === 'COMPLETED') statusBadge = <span className={`${badgeClasses} bg-emerald-50 text-emerald-600 border-emerald-100`}>Selesai</span>;
+  else statusBadge = <span className={`${badgeClasses} bg-slate-100 text-slate-600 border-slate-200`}>{status}</span>;
+
   return (
-    <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
-      <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-          <FileText size={24} />
+    <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
+          <FileText size={18} />
         </div>
         <div>
-          <h3 className="font-bold text-slate-800 text-base">{title}</h3>
-          <div className="flex items-center gap-3 mt-1.5">
-            <span className="text-xs font-semibold text-slate-500">{date}</span>
+          <h3 className="font-bold text-slate-800 text-sm line-clamp-1 max-w-[400px]" title={title}>{title}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[11px] font-medium text-slate-500">{date}</span>
             <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-            <span className="text-xs font-bold text-teal-600">{total}</span>
+            <span className="text-[11px] font-bold text-teal-600">{total}</span>
           </div>
         </div>
       </div>
       
       <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-        {status === 'approved' && (
-          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">Disetujui</span>
-        )}
-        {status === 'draft' && (
-          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">Draf / Revisi</span>
-        )}
+        {statusBadge}
         
         <div className="flex items-center gap-2">
-          <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="Download PDF">
-            <Download size={18} />
-          </button>
-          <button className="px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+          <Link to={`/y/rab/${id}`} className="px-3 py-1.5 text-[11px] font-bold text-slate-600 bg-white border border-slate-200 rounded-md hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
             Lihat Detail
-          </button>
+          </Link>
         </div>
       </div>
     </div>

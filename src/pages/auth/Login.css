@@ -62,7 +62,8 @@
 
 .form-group input[type="email"],
 .form-group input[type="text"],
-.form-group input[type="password"] {
+.form-group input[type="password"],
+.form-group input[type="file"] {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid #ddd;
@@ -72,6 +73,30 @@
   background: #fff;
   transition: border-color 0.2s;
   outline: none;
+}
+
+.form-group input[type="file"] {
+  padding: 8px 10px;
+  cursor: pointer;
+  background: #fafafa;
+}
+
+.form-group input[type="file"]::file-selector-button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background-color: #e5eff0;
+  color: #4b8b90;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.form-group input[type="file"]::file-selector-button:hover {
+  background-color: #d1e5e6;
+  color: #3a6b6f;
 }
 
 .form-group input::placeholder {

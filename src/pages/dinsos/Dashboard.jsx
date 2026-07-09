@@ -117,7 +117,7 @@ export default function Dashboard() {
       setIsLoading(true);
       try {
         const d = await campaignApi.list();
-        setFeaturedCampaigns(d.campaigns || []);
+        setFeaturedCampaigns((d.campaigns || []).filter(c => c.status === "ACTIVE" || c.status === "COMPLETED"));
 
         const txData = await transactionApi.list();
         if (Array.isArray(txData)) {

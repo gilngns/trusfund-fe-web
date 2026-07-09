@@ -103,8 +103,7 @@ export default function YayasanLayout({ children }) {
               <input 
                 type="text" 
                 placeholder="Search data..." 
-                style={{ color: "#0f172a" }}
-                className="pl-9 pr-4 py-1.5 bg-slate-100/50 border border-transparent rounded-md text-sm outline-none focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 w-[240px] transition-all duration-200 placeholder:text-slate-400" 
+                className="pl-9 pr-4 py-1.5 bg-slate-100/50 border border-transparent rounded-md text-sm text-slate-900 outline-none focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 w-[240px] transition-all duration-200 placeholder:text-slate-400" 
               />
             </div>
             <div className="flex items-center gap-4">

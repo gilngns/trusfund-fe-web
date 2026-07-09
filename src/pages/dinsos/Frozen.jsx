@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import Swal from "sweetalert2";
 import { campaignApi } from "../../api/client";
 import { rp } from "../../api/format";
 import { Button, Empty, Loading, Card } from "../../components/ui";
@@ -12,7 +13,7 @@ export default function Frozen() {
       const d = await campaignApi.list("FROZEN");
       setList(d.campaigns || []);
     } catch (e) {
-      alert(e.message);
+      Swal.fire("Error", e.message, "error");
       setList([]);
     }
   }, []);
@@ -21,14 +22,33 @@ export default function Frozen() {
     load();
   }, [load]);
 
-  const resolve = async (c, approve) => {
+  const handleResolve = async (c, approve) => {
     setBusyId(c.id);
     try {
-      await campaignApi.resolveFrozen(c.id, approve);
-      alert(approve ? "Kampanye dilanjutkan." : "Refund diaktifkan untuk donatur.");
+      const result = await Swal.fire({
+        title: "Tentukan Tindakan",
+        text: "Pilih tindakan untuk kampanye bermasalah ini.",
+        icon: "warning",
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: "Lanjutkan Kampanye",
+        denyButtonText: "Refund Donatur",
+        cancelButtonText: "Batal",
+        confirmButtonColor: "#0d9488",
+        denyButtonColor: "#f43f5e",
+      });
+
+      if (result.isDismissed) {
+        setBusyId(null);
+        return;
+      }
+      
+      const isApprove = result.isConfirmed;
+      await campaignApi.resolveFrozen(c.id, isApprove);
+      Swal.fire("Berhasil", isApprove ? "Kampanye dilanjutkan." : "Refund diaktifkan untuk donatur.", "success");
       load();
     } catch (e) {
-      alert(e.message);
+      Swal.fire("Gagal", e.message, "error");
     } finally {
       setBusyId(null);
     }
@@ -70,14 +90,14 @@ export default function Frozen() {
                       <Button
                         variant="approve"
                         disabled={busyId === c.id}
-                        onClick={() => resolve(c, true)}
+                        onClick={() => handleResolve(c, true)}
                       >
                         Lanjutkan
                       </Button>
                       <Button
                         variant="reject"
                         disabled={busyId === c.id}
-                        onClick={() => resolve(c, false)}
+                        onClick={() => handleResolve(c, false)}
                       >
                         Refund
                       </Button>

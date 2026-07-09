@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import {
   ShieldCheck, BadgeCheck, ArrowRight, ArrowUpRight,
@@ -12,6 +12,10 @@ import ScrollIntro from "../components/ScrollIntro";
 import ProgressBar from "../components/ProgressBar";
 import { rp } from "../api/format";
 import blockchainLottie from "../assets/asset-blockchain.lottie";
+import HeroDualPhones from "../components/HeroDualPhones";
+import splashImg from "../assets/Splash.png";
+import homeImg from "../assets/HomePage.png";
+
 
 const TRUST_POINTS = [
   "Verifikasi Berlapis DINSOS",
@@ -21,10 +25,10 @@ const TRUST_POINTS = [
 ];
 
 const STEPS = [
-  { n: "01", icon: UserCheck, title: "Registrasi & Verifikasi", desc: "Yayasan mendaftar dan melengkapi dokumen legal; Dinas Sosial memverifikasi sebelum akses penuh diberikan." },
-  { n: "02", icon: Calculator, title: "Susun & Validasi RAB", desc: "Rencana Anggaran Biaya disusun lalu diberi skor validasi otomatis oleh AI sebelum kampanye tayang." },
-  { n: "03", icon: Megaphone, title: "Kampanye Berjalan Transparan", desc: "Donasi dan transaksi tercatat real-time, progres dapat dipantau oleh Dinas Sosial maupun publik." },
-  { n: "04", icon: Wallet, title: "Pencairan Dana Terlacak", desc: "Dana dicairkan bertahap sesuai milestone, setiap transaksi punya jejak audit yang bisa ditelusuri." },
+  { n: "01", icon: UserCheck, title: "Registrasi dan Verifikasi", desc: "Yayasan mendaftar dan melengkapi dokumen legal. Dinas Sosial memverifikasi semuanya sebelum akses penuh diberikan." },
+  { n: "02", icon: Calculator, title: "Susun dan Validasi RAB", desc: "Rencana Anggaran Biaya disusun lalu diberi skor validasi otomatis oleh AI sebelum kampanye bisa tayang ke publik." },
+  { n: "03", icon: Megaphone, title: "Kampanye Berjalan Transparan", desc: "Donasi dan transaksi tercatat secara real-time. Progres bisa dipantau oleh Dinas Sosial maupun publik kapan saja." },
+  { n: "04", icon: Wallet, title: "Pencairan Dana Terlacak", desc: "Dana dicairkan bertahap sesuai milestone. Setiap transaksi punya jejak audit yang bisa ditelusuri kembali." },
 ];
 
 const CAMPAIGNS = [
@@ -76,8 +80,8 @@ const STATS = [
 const TRANSPARENCY_POINTS = [
   "Dana tidak bisa dicairkan sepihak tanpa validasi Dinas Sosial.",
   "RAB divalidasi AI sebelum kampanye tayang ke publik.",
-  "Setiap transaksi memiliki jejak audit & referensi yang bisa ditelusuri.",
-  "Kampanye bermasalah otomatis dibekukan (FROZEN) untuk investigasi lanjutan.",
+  "Setiap transaksi punya jejak audit dan referensi yang bisa ditelusuri kapan saja.",
+  "Kampanye bermasalah otomatis dibekukan (FROZEN) untuk investigasi lebih lanjut.",
 ];
 
 const LEDGER_ROWS = [
@@ -113,19 +117,29 @@ function CornerNodes({ className }) {
     { x: 92, y: 50 },
     { x: 74, y: 74 },
     { x: 46, y: 82 },
+    { x: 15, y: 75 },
+    { x: 65, y: 55 },
+    { x: 85, y: 15 },
+    { x: 30, y: 15 },
+    { x: 60, y: 90 },
   ];
   const links = [
     [0, 1], [1, 2], [1, 3], [2, 4], [3, 4], [4, 5], [5, 6],
     [6, 7], [7, 3], [3, 8], [8, 0], [1, 8],
+    [9, 0], [9, 1], [9, 8],
+    [10, 3], [10, 5], [10, 7],
+    [11, 5], [11, 6],
+    [12, 2], [12, 4],
+    [13, 8], [13, 7]
   ];
-  const hubs = new Set([1, 3, 6]);
+  const hubs = new Set([1, 3, 6, 10, 9]);
   return (
     <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       {links.map(([a, b], i) => (
         <line
           key={i}
           x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y}
-          stroke="#2563eb" strokeOpacity="0.35" strokeWidth="1.2"
+          stroke="#2563eb" strokeOpacity="0.75" strokeWidth="1.5"
         />
       ))}
       {nodes.map((n, i) => (
@@ -155,33 +169,51 @@ function LazyLottie({ src, className }) {
 }
 
 export default function Landing() {
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const skipIntro = location.state?.skipIntro === true;
+  const [loading, setLoading] = useState(!skipIntro);
 
   return (
     <>
       {loading && <ScrollIntro onDone={() => setLoading(false)} />}
       <PublicLayout scrollLocked={loading}>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <CornerNodes className="hidden sm:block absolute top-0 left-0 w-44 h-44 opacity-90" />
-        <CornerNodes className="hidden sm:block absolute top-0 right-0 w-44 h-44 opacity-90 -scale-x-100" />
-        <CornerNodes className="hidden sm:block absolute bottom-0 left-0 w-44 h-44 opacity-90 -scale-y-100" />
-        <CornerNodes className="hidden sm:block absolute bottom-0 right-0 w-44 h-44 opacity-90 -scale-x-100 -scale-y-100" />
-        <div className="relative max-w-7xl mx-auto px-6 pt-10 pb-24 grid lg:grid-cols-2 gap-10 items-center">
+      {/* Hero — -mt-16 menarik section ke atas supaya partikel tembus ke area navbar */}
+      <section className="-mt-16 relative overflow-hidden">
+        {/* Komposisi 4 sudut: bingkai penuh — kiri atas & kanan bawah besar, kanan atas & kiri bawah sedang */}
+        <CornerNodes className="absolute -top-12 -left-12 w-[200px] h-[200px] opacity-55" />
+        <CornerNodes className="absolute -top-8 -right-8 w-[220px] h-[220px] opacity-45 -scale-x-100" />
+        <CornerNodes className="absolute -bottom-8 -left-8 w-[200px] h-[200px] opacity-40 -scale-y-100" />
+        <CornerNodes className="absolute -bottom-12 -right-12 w-[320px] h-[320px] opacity-55 -scale-x-100 -scale-y-100" />
+        
+        <div className="relative max-w-7xl mx-auto px-6 pt-28 pb-24 grid lg:grid-cols-2 gap-10 items-center">
           <div className="fade-up">
             <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] mb-5">
               Satu dashboard untuk mengawasi <span className="gradient-text">setiap rupiah</span> bantuan sosial.
             </h1>
             <p className="text-slate-600 text-base sm:text-lg leading-relaxed mb-7 max-w-xl">
-              TrustFund menghubungkan Dinas Sosial dan yayasan terverifikasi dalam satu sistem pencatatan — dari verifikasi lembaga, validasi anggaran, hingga pencairan dana yang bisa dilacak secara real-time.
+              TrustFund menghubungkan Dinas Sosial dan yayasan terverifikasi dalam satu sistem pencatatan. Mulai dari verifikasi lembaga, validasi anggaran, sampai pencairan dana yang bisa dilacak secara real-time.
             </p>
             <div className="flex flex-wrap items-center gap-3 mb-8">
-              <Link to="/login" className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-lg transition-colors shadow-sm shadow-blue-600/25">
-                Masuk ke Dashboard <ArrowRight size={16} />
+              <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-lg transition-colors shadow-sm shadow-blue-600/25">
+                Daftarkan Yayasan <ArrowRight size={16} />
               </Link>
-              <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 border border-slate-300 hover:border-slate-400 px-5 py-3 rounded-lg transition-colors">
-                Daftarkan Yayasan
-              </Link>
+              <a
+                href="https://play.google.com/store"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-lg transition-colors"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3.18 23.5c.32.18.68.22 1.04.1l13.1-7.57-2.9-2.9-11.24 10.37z" fill="#EA4335"/>
+                  <path d="M21.54 10.27L18.3 8.4l-3.24 3.24 3.24 3.24 3.27-1.89a1.87 1.87 0 000-2.72z" fill="#FBBC04"/>
+                  <path d="M4.22.4A1.87 1.87 0 003 2.18v19.64c0 .72.4 1.35 1.04 1.68L15.06 12.5 4.22.4z" fill="#4285F4"/>
+                  <path d="M4.22.4l10.84 11.74 3.24-3.24L5.26.27A1.88 1.88 0 004.22.4z" fill="#34A853"/>
+                </svg>
+                <div className="leading-tight text-left">
+                  <div className="text-[9px] text-slate-400 uppercase tracking-wider">Tersedia di</div>
+                  <div className="text-sm font-semibold">Google Play</div>
+                </div>
+              </a>
             </div>
             <div className="flex flex-wrap gap-x-8 gap-y-3">
               {STATS.slice(0, 3).map((s) => (
@@ -200,33 +232,11 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="relative fade-up [animation-delay:120ms]">
-            <span className="corner corner-tl" />
-            <span className="corner corner-br" />
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-xl shadow-slate-900/5 aspect-[4/3]">
-              <img
-                src="https://images.pexels.com/photos/6146693/pexels-photo-6146693.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                alt="Kolaborasi tim menyalurkan bantuan sosial"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="absolute -bottom-6 -left-6 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-4 shadow-lg shadow-slate-900/10 w-60">
-              <div className="flex items-center gap-2 text-blue-700 mb-1.5">
-                <span className="badge-ring inline-flex">
-                  <span className="bg-white rounded-full p-1 flex"><ShieldCheck size={13} /></span>
-                </span>
-                <span className="text-[11px] font-bold uppercase tracking-wide">Audit Trail Aktif</span>
-              </div>
-              <p className="text-xs text-slate-500 leading-snug">Setiap transaksi tercatat otomatis & tidak bisa diubah sepihak.</p>
-            </div>
-            <div className="hidden sm:block absolute -top-5 -right-5 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl px-4 py-3 shadow-lg shadow-slate-900/10">
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-0.5">RAB Score</div>
-              <div className="flex items-center gap-1.5">
-                <BadgeCheck size={16} className="text-blue-600" />
-                <span className="font-display text-sm font-bold text-slate-900">92/100 Valid</span>
-              </div>
-            </div>
-          </div>
+          <HeroDualPhones
+            splashScreenshot={splashImg}
+            homeScreenshot={homeImg}
+            height={600}
+          />
         </div>
       </section>
 
@@ -275,7 +285,7 @@ export default function Landing() {
         <Reveal className="relative max-w-2xl mb-8">
           <div className="text-[11px] font-bold uppercase tracking-widest text-blue-700 mb-2">Cara Kerja</div>
           <h2 className="font-display text-3xl font-bold tracking-tight mb-3">Empat langkah menuju bantuan yang bisa dipertanggungjawabkan.</h2>
-          <p className="text-slate-600 leading-relaxed">Dari pendaftaran yayasan hingga dana sampai ke penerima manfaat, semua tahapan tercatat dalam satu alur yang sama.</p>
+          <p className="text-slate-600 leading-relaxed">Dari pendaftaran yayasan sampai dana tiba ke penerima manfaat, semua tahapan tercatat dalam satu alur yang sama.</p>
         </Reveal>
         <div className="relative grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {STEPS.map((s, i) => (
@@ -298,7 +308,7 @@ export default function Landing() {
             <div className="max-w-xl">
               <div className="text-[11px] font-bold uppercase tracking-widest text-blue-700 mb-2">Kampanye</div>
               <h2 className="font-display text-3xl font-bold tracking-tight mb-3">Contoh kampanye yang diawasi dalam sistem.</h2>
-              <p className="text-slate-600 leading-relaxed">Setiap kampanye melewati validasi RAB dan pemantauan progres sebelum dana dicairkan ke yayasan pelaksana.</p>
+              <p className="text-slate-600 leading-relaxed">Setiap kampanye melewati validasi RAB dan pemantauan progres sebelum dana bisa dicairkan ke yayasan pelaksana.</p>
             </div>
           </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -335,7 +345,7 @@ export default function Landing() {
       <section id="transparansi" className="max-w-7xl mx-auto px-6 py-14 grid lg:grid-cols-2 gap-10 items-center scroll-mt-20">
         <Reveal>
           <div className="text-[11px] font-bold uppercase tracking-widest text-blue-700 mb-2">Transparansi</div>
-          <h2 className="font-display text-3xl font-bold tracking-tight mb-5">Dirancang agar tidak ada yang bisa disembunyikan.</h2>
+          <h2 className="font-display text-3xl font-bold tracking-tight mb-5">Dirancang supaya tidak ada yang bisa disembunyikan.</h2>
           <ul className="space-y-3.5">
             {TRANSPARENCY_POINTS.map((p) => (
               <li key={p} className="flex items-start gap-3">
@@ -395,7 +405,7 @@ export default function Landing() {
             Yayasan Anda siap menjadi lebih transparan?
           </h2>
           <p className="text-slate-300 max-w-xl mx-auto mb-7 leading-relaxed">
-            Daftarkan yayasan, lengkapi dokumen verifikasi, dan mulai kelola kampanye dengan pencatatan yang bisa dipercaya oleh donatur maupun Dinas Sosial.
+            Daftarkan yayasan, lengkapi dokumen verifikasi, dan mulai kelola kampanye dengan pencatatan yang bisa dipercaya oleh donatur dan Dinas Sosial.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-950 bg-white hover:bg-slate-100 px-5 py-3 rounded-lg transition-colors">

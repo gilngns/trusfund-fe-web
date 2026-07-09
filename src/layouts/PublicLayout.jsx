@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Lenis from "lenis";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 import "./PublicLayout.css";
 
 const NAV_LINKS = [
-  { href: "#cara-kerja", label: "Cara Kerja", type: "anchor" },
-  { href: "#kampanye", label: "Kampanye", type: "anchor" },
-  { href: "#transparansi", label: "Transparansi", type: "anchor" },
+  { href: "/", label: "Beranda", type: "home" },
+  { href: "/kampanye-publik", label: "Kampanye", type: "route" },
+  { href: "/faq", label: "FAQ", type: "route" },
   { href: "/tentang-kami", label: "Tentang Kami", type: "route" },
 ];
 
@@ -58,9 +58,13 @@ export default function PublicLayout({ children, scrollLocked = false }) {
     if (!lenisRef.current) return;
     if (scrollLocked) {
       lenisRef.current.stop();
+      window.scrollTo(0, 0);
     } else {
-      lenisRef.current.scrollTo(0, { immediate: true });
-      lenisRef.current.start();
+      window.scrollTo(0, 0);
+      lenisRef.current.scrollTo(0, { immediate: true, force: true });
+      requestAnimationFrame(() => {
+        if (lenisRef.current) lenisRef.current.start();
+      });
     }
   }, [scrollLocked]);
 
@@ -83,24 +87,25 @@ export default function PublicLayout({ children, scrollLocked = false }) {
     <div className="landing page-mesh relative min-h-screen text-slate-900 selection:bg-blue-500/20">
       <div className="grain fixed inset-0 pointer-events-none z-[1]" />
       {/* Navbar */}
-      <header className={`sticky top-0 z-40 transition-colors ${scrolled ? "bg-white/85 backdrop-blur-md border-b border-slate-200" : "bg-transparent border-b border-transparent"}`}>
+      <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? "bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm shadow-slate-900/5" : "bg-transparent border-b border-transparent"}`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="font-display font-bold text-lg tracking-tight text-slate-900">
+          <Link to="/" className="font-display font-bold text-2xl tracking-tight text-slate-900">
             Trust<span className="text-blue-600">Fund</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-            {NAV_LINKS.map((l) => (
-              l.type === "route" ? (
+            {NAV_LINKS.map((l) =>
+              l.type === "home" ? (
+                <Link key={l.href} to={l.href} state={{ skipIntro: true }} className="text-slate-600 hover:text-slate-900 transition-colors">{l.label}</Link>
+              ) : l.type === "route" ? (
                 <Link key={l.href} to={l.href} className="text-slate-600 hover:text-slate-900 transition-colors">{l.label}</Link>
               ) : (
                 <a key={l.href} href={l.href} onClick={(e) => handleNavClick(e, l.href)} className="text-slate-600 hover:text-slate-900 transition-colors">{l.label}</a>
               )
-            ))}
+            )}
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/login" className="text-sm font-semibold text-slate-700 hover:text-slate-900 px-4 py-2 transition-colors">Masuk</Link>
-            <Link to="/register" className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm shadow-blue-600/20">
-              Daftarkan Yayasan
+            <Link to="/login" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 px-4 py-2 rounded-lg transition-all duration-200">
+              Masuk <ArrowRight size={14} />
             </Link>
           </div>
           <button className="md:hidden p-2 text-slate-600" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu">
@@ -124,7 +129,9 @@ export default function PublicLayout({ children, scrollLocked = false }) {
         )}
       </header>
 
-      {children}
+      <div className="pt-16">
+        {children}
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-slate-200">

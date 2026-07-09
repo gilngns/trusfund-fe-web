@@ -14,22 +14,14 @@ const TEAM = [
   {
     name: "Bima Aditya Pratama",
     role: "Co-Founder & CEO",
-    photo: "https://images.pexels.com/photos/12311572/pexels-photo-12311572.jpeg?auto=compress&cs=tinysrgb&w=500",
+    bio: "Berpengalaman di bidang kebijakan publik dan teknologi sipil. Mendirikan TrustFund setelah melihat langsung celah transparansi dalam penyaluran dana sosial di lapangan.",
+    photo: "https://images.pexels.com/photos/12311572/pexels-photo-12311572.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
   {
     name: "Nadia Kirana",
     role: "Co-Founder & Head of Product",
-    photo: "https://images.pexels.com/photos/30004323/pexels-photo-30004323.jpeg?auto=compress&cs=tinysrgb&w=500",
-  },
-  {
-    name: "Yusuf Maulana",
-    role: "Head of Engineering",
-    photo: "https://images.pexels.com/photos/37148308/pexels-photo-37148308.jpeg?auto=compress&cs=tinysrgb&w=500",
-  },
-  {
-    name: "Ratih Anindya",
-    role: "Head of Kemitraan & Kepatuhan",
-    photo: "https://images.pexels.com/photos/38197025/pexels-photo-38197025.jpeg?auto=compress&cs=tinysrgb&w=500",
+    bio: "Berlatar belakang desain sistem dan riset pengguna. Memimpin pengembangan produk TrustFund agar bisa digunakan oleh semua pihak, dari yayasan kecil hingga Dinas Sosial.",
+    photo: "https://images.pexels.com/photos/30004323/pexels-photo-30004323.jpeg?auto=compress&cs=tinysrgb&w=800",
   },
 ];
 
@@ -44,7 +36,7 @@ export default function About() {
             Kami percaya bantuan sosial harus bisa <span className="gradient-text">dipertanggungjawabkan</span> sampai rupiah terakhir.
           </h1>
           <p className="text-slate-600 text-base sm:text-lg leading-relaxed max-w-2xl">
-            TrustFund dibangun untuk menutup celah antara niat baik dan kepercayaan publik — menghubungkan Dinas Sosial, yayasan, dan penerima manfaat dalam satu sistem pencatatan yang sama.
+            TrustFund dibangun untuk menutup celah antara niat baik dan kepercayaan publik. Kami menghubungkan Dinas Sosial, yayasan, dan penerima manfaat dalam satu sistem pencatatan yang sama.
           </p>
         </Reveal>
       </section>
@@ -59,7 +51,7 @@ export default function About() {
               Selama ini, banyak program bantuan sosial berhenti di laporan tahunan yang sulit diaudit publik. Ketika ada ketidaksesuaian, prosesnya panjang dan datanya tersebar di banyak pihak.
             </p>
             <p className="text-slate-600 leading-relaxed">
-              TrustFund mengganti proses itu dengan satu sistem pencatatan digital: setiap kampanye, transaksi, dan pencairan dana punya jejak yang bisa ditelusuri — dari pengajuan yayasan sampai dana diterima penerima manfaat.
+              TrustFund mengganti proses itu dengan satu sistem pencatatan digital. Setiap kampanye, transaksi, dan pencairan dana punya jejak yang bisa ditelusuri. Mulai dari pengajuan yayasan sampai dana diterima penerima manfaat.
             </p>
           </Reveal>
           <Reveal delay={120} className="relative">
@@ -100,23 +92,37 @@ export default function About() {
       {/* Team */}
       <section className="border-y border-slate-200/70">
         <div className="max-w-7xl mx-auto px-6 py-14">
-          <Reveal className="max-w-2xl mb-8">
+          <Reveal className="max-w-2xl mb-10">
             <div className="text-[11px] font-bold uppercase tracking-widest text-blue-700 mb-2">Orang di Balik TrustFund</div>
             <h2 className="font-display text-3xl font-bold tracking-tight mb-3">Tim kecil yang fokus pada satu masalah.</h2>
-            <p className="text-slate-600 leading-relaxed">Berlatar belakang teknologi, kebijakan sosial, dan audit keuangan — bersatu untuk membangun sistem yang bisa dipercaya semua pihak.</p>
+            <p className="text-slate-600 leading-relaxed">Berlatar belakang teknologi, kebijakan sosial, dan audit keuangan. Bersatu untuk membangun sistem yang bisa dipercaya semua pihak.</p>
           </Reveal>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+          {/* Editorial 2-column layout */}
+          <div className="flex justify-center">
+            <div className="grid sm:grid-cols-2 gap-3 max-w-2xl w-full">
             {TEAM.map((member, i) => (
-              <Reveal key={member.name} delay={i * 80} className="tf-card overflow-hidden">
-                <div className="aspect-square overflow-hidden">
-                  <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-slate-900 text-sm">{member.name}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{member.role}</p>
+              <Reveal key={member.name} delay={i * 100}>
+                <div className="relative rounded-2xl overflow-hidden group aspect-[3/4] max-h-[520px]">
+                  <img
+                    src={member.photo}
+                    alt={member.name}
+                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  />
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
+                  {/* Info overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-blue-300 mb-1">{member.role}</p>
+                    <h3 className="font-display text-xl font-bold text-white mb-2">{member.name}</h3>
+                    <p className="text-sm text-slate-300 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-300 max-h-0 group-hover:max-h-24 overflow-hidden">
+                      {member.bio}
+                    </p>
+                  </div>
                 </div>
               </Reveal>
             ))}
+            </div>
           </div>
         </div>
       </section>

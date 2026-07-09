@@ -4,6 +4,8 @@ import DinsosLayout from "./layouts/DinsosLayout";
 import YayasanLayout from "./layouts/YayasanLayout";
 import Landing from "./pages/Landing";
 import About from "./pages/About";
+import PublicCampaigns from "./pages/landing/PublicCampaigns";
+import FAQ from "./pages/landing/FAQ";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dinsos/Dashboard";
@@ -58,6 +60,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomeRoute />} />
         <Route path="/tentang-kami" element={<About />} />
+        <Route path="/kampanye-publik" element={<PublicCampaigns />} />
+        <Route path="/faq" element={<FAQ />} />
         <Route path="/login" element={<RedirectBasedOnRole type="login" />} />
         <Route path="/register" element={<RedirectBasedOnRole type="register" />} />
         <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />

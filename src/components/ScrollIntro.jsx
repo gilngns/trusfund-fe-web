@@ -26,6 +26,11 @@ export default function ScrollIntro({ onDone }) {
       return;
     }
 
+    // Jangan biarkan browser restore posisi scroll lama saat reload —
+    // intro harus selalu mulai dengan halaman di posisi paling atas.
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+
     const prevOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
 
@@ -35,6 +40,7 @@ export default function ScrollIntro({ onDone }) {
       window.removeEventListener("wheel", handleWheel);
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("keydown", handleKey);
       document.documentElement.style.overflow = prevOverflow;
       window.scrollTo(0, 0);
       onDone();
@@ -66,9 +72,20 @@ export default function ScrollIntro({ onDone }) {
       targetRef.current = clamp(targetRef.current + dy / (SCROLL_DISTANCE * 0.6), 0, 1);
     }
 
+    // Space/PageDown/arrow juga bisa men-scroll halaman — ikut ditelan selama intro,
+    // dan dihitung sebagai progress supaya pengguna keyboard tetap bisa masuk.
+    const SCROLL_KEYS = ["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "];
+    function handleKey(e) {
+      if (!SCROLL_KEYS.includes(e.key)) return;
+      e.preventDefault();
+      if (resolvedRef.current) return;
+      targetRef.current = clamp(targetRef.current + 120 / SCROLL_DISTANCE, 0, 1);
+    }
+
     window.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("keydown", handleKey, { passive: false });
 
     let current = 0;
     let rafId;
@@ -89,6 +106,7 @@ export default function ScrollIntro({ onDone }) {
       window.removeEventListener("wheel", handleWheel);
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("keydown", handleKey);
       document.documentElement.style.overflow = prevOverflow;
     };
   }, [onDone]);

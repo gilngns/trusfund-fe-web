@@ -1,0 +1,23 @@
+.scroll-intro-scene {
+  perspective: 700px;
+}
+
+.scroll-intro-letter {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+@keyframes scroll-intro-hint {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
+
+.scroll-intro-hint {
+  animation: scroll-intro-hint 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-intro-hint {
+    animation: none;
+  }
+}

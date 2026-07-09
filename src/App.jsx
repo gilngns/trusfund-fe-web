@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import DinsosLayout from "./layouts/DinsosLayout";
 import YayasanLayout from "./layouts/YayasanLayout";
+import Landing from "./pages/Landing";
+import About from "./pages/About";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dinsos/Dashboard";
@@ -41,12 +43,21 @@ function RedirectBasedOnRole({ type }) {
   return <Navigate to="/dashboard" replace />;
 }
 
+function HomeRoute() {
+  const { user } = useAuth();
+  if (!user) return <Landing />;
+  if (user.role === "FOUNDATION") return <Navigate to="/y/dashboard" replace />;
+  return <Navigate to="/dashboard" replace />;
+}
+
 export default function App() {
   const { user } = useAuth();
 
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<HomeRoute />} />
+        <Route path="/tentang-kami" element={<About />} />
         <Route path="/login" element={<RedirectBasedOnRole type="login" />} />
         <Route path="/register" element={<RedirectBasedOnRole type="register" />} />
         <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />

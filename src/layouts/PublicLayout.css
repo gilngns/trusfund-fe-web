@@ -1,0 +1,128 @@
+/* ---- TrustFund public site design system ----
+   Primary brand color is blue. Everything below keys off these tokens.
+   Shared by Landing, About, and any other public-facing page. */
+.landing {
+  font-family: 'Inter', system-ui, sans-serif;
+  --tf-primary: #2563eb;
+  --tf-primary-dark: #1d4ed8;
+  --tf-primary-light: #eff6ff;
+  --tf-ink: #0f172a;
+}
+
+.landing .font-display {
+  font-family: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+}
+
+.landing .page-mesh {
+  background-color: #f7f9fc;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.11) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.landing .gradient-text {
+  background: linear-gradient(100deg, var(--tf-primary-dark) 10%, #2563eb 45%, #0ea5e9 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing .grid-fade {
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+/* Card: crisp white surface, definite border, accent bar, lifts on hover. */
+.landing .tf-card {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 1rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.landing .tf-card:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 12px 28px -8px rgba(37, 99, 235, 0.18);
+  transform: translateY(-3px);
+}
+
+.landing .icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 0.65rem;
+  background: var(--tf-primary-light);
+  color: var(--tf-primary);
+  flex-shrink: 0;
+}
+
+.landing .corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--tf-primary);
+}
+.landing .corner-tl { top: -10px; left: -10px; border-right: none; border-bottom: none; }
+.landing .corner-br { bottom: -10px; right: -10px; border-left: none; border-top: none; }
+
+.landing .badge-ring {
+  background: conic-gradient(from 180deg, var(--tf-primary), #0ea5e9, var(--tf-primary));
+  border-radius: 9999px;
+  padding: 2px;
+}
+
+.landing .grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.035;
+}
+
+@keyframes landing-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.landing .marquee-track {
+  animation: landing-marquee 26s linear infinite;
+}
+.landing .marquee-row:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes landing-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.landing .pulse-dot {
+  animation: landing-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes landing-fade-up {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.landing .fade-up {
+  animation: landing-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.landing .ledger-row {
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+}
+
+/* Scroll-triggered reveal: fades + slides up once when a section enters view. */
+.landing .reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.landing .reveal.reveal-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

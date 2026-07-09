@@ -86,14 +86,31 @@ export default function Foundations() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {list === null ? (
-                <tr>
-                  <td colSpan="5" className="px-5 py-12 text-center">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-sm font-medium text-slate-500">Memuat data yayasan...</span>
-                    </div>
-                  </td>
-                </tr>
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="animate-pulse border-b border-slate-100 last:border-0">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-slate-200 shrink-0"></div>
+                        <div className="h-4 bg-slate-200 rounded w-32"></div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-4 bg-slate-200 rounded w-40"></div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-4 bg-slate-200 rounded w-20"></div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-6 bg-slate-200 rounded-full w-24"></div>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="h-8 bg-slate-200 rounded-lg w-20"></div>
+                        <div className="h-8 bg-slate-200 rounded-lg w-24"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : list.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-5 py-12 text-center text-slate-500 font-medium text-sm">

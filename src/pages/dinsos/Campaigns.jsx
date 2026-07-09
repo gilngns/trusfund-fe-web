@@ -190,9 +190,21 @@ export default function Campaigns() {
         </div>
 
         {isLoading ? (
-          <div className="w-full p-10 flex flex-col items-center justify-center text-slate-500">
-            <div className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-            Memuat data persetujuan...
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col animate-pulse">
+                <div className="h-40 bg-slate-200"></div>
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="h-5 bg-slate-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-slate-100 rounded w-1/2 mb-4"></div>
+                  <div className="h-16 bg-slate-50 rounded-xl mb-5"></div>
+                  <div className="flex gap-2 mt-auto pt-1">
+                    <div className="flex-1 h-10 bg-slate-100 rounded-xl"></div>
+                    <div className="flex-1 h-10 bg-slate-200 rounded-xl"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : pendingApprovals.length === 0 ? (
           <div className="w-full bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm">

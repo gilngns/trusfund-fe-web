@@ -59,7 +59,14 @@ export const authApi = {
 };
 
 export const campaignApi = {
-  list: (status) => api.get(status ? `/campaigns?status=${status}` : "/campaigns"),
+  list: (status, page, limit) => {
+    const q = new URLSearchParams();
+    if (status && status !== "ALL") q.append("status", status);
+    if (page) q.append("page", page);
+    if (limit) q.append("limit", limit);
+    const qs = q.toString();
+    return api.get(qs ? `/campaigns?${qs}` : "/campaigns");
+  },
   getById: (id) => api.get(`/campaigns/${id}`),
   create: (data) => api.post("/campaigns", data),
   planDraft: (data) => api.post("/campaigns/plan-draft", data),

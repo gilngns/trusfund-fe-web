@@ -11,6 +11,7 @@ import CountUp from "../components/CountUp";
 import ScrollIntro from "../components/ScrollIntro";
 import ProgressBar from "../components/ProgressBar";
 import { rp } from "../api/format";
+import { useAuth } from "../context/AuthContext";
 import blockchainLottie from "../assets/asset-blockchain.lottie";
 import HeroDualPhones from "../components/HeroDualPhones";
 import splashImg from "../assets/Splash.png";
@@ -170,6 +171,7 @@ function LazyLottie({ src, className }) {
 
 export default function Landing() {
   const location = useLocation();
+  const { user } = useAuth();
   const skipIntro = location.state?.skipIntro === true;
   const [loading, setLoading] = useState(!skipIntro);
 
@@ -194,9 +196,15 @@ export default function Landing() {
               TrustFund menghubungkan Dinas Sosial dan yayasan terverifikasi dalam satu sistem pencatatan. Mulai dari verifikasi lembaga, validasi anggaran, sampai pencairan dana yang bisa dilacak secara real-time.
             </p>
             <div className="flex flex-wrap items-center gap-3 mb-8">
-              <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-lg transition-colors shadow-sm shadow-blue-600/25">
-                Daftarkan Yayasan <ArrowRight size={16} />
-              </Link>
+              {user ? (
+                <Link to={user.role === "FOUNDATION" ? "/y/dashboard" : "/dashboard"} className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-lg transition-colors shadow-sm shadow-blue-600/25">
+                  Ke Dashboard <ArrowRight size={16} />
+                </Link>
+              ) : (
+                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-lg transition-colors shadow-sm shadow-blue-600/25">
+                  Daftarkan Yayasan <ArrowRight size={16} />
+                </Link>
+              )}
               <a
                 href="https://play.google.com/store"
                 target="_blank"
@@ -408,12 +416,20 @@ export default function Landing() {
             Daftarkan yayasan, lengkapi dokumen verifikasi, dan mulai kelola kampanye dengan pencatatan yang bisa dipercaya oleh donatur dan Dinas Sosial.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-950 bg-white hover:bg-slate-100 px-5 py-3 rounded-lg transition-colors">
-              Daftarkan Yayasan <ArrowRight size={16} />
-            </Link>
-            <Link to="/login" className="inline-flex items-center gap-2 text-sm font-semibold text-white border border-white/30 hover:border-white/60 px-5 py-3 rounded-lg transition-colors">
-              Sudah punya akun? Masuk
-            </Link>
+            {user ? (
+              <Link to={user.role === "FOUNDATION" ? "/y/dashboard" : "/dashboard"} className="inline-flex items-center gap-2 text-sm font-semibold text-blue-950 bg-white hover:bg-slate-100 px-5 py-3 rounded-lg transition-colors">
+                Ke Dashboard <ArrowRight size={16} />
+              </Link>
+            ) : (
+              <>
+                <Link to="/register" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-950 bg-white hover:bg-slate-100 px-5 py-3 rounded-lg transition-colors">
+                  Daftarkan Yayasan <ArrowRight size={16} />
+                </Link>
+                <Link to="/login" className="inline-flex items-center gap-2 text-sm font-semibold text-white border border-white/30 hover:border-white/60 px-5 py-3 rounded-lg transition-colors">
+                  Sudah punya akun? Masuk
+                </Link>
+              </>
+            )}
           </div>
         </Reveal>
       </section>

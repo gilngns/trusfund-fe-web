@@ -8,24 +8,33 @@ export default function YCampaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const limit = 6;
 
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await campaignApi.list();
+      const res = await campaignApi.list(filter, page, limit);
       setCampaigns(res.campaigns || []);
+      setPagination(res.pagination || null);
     } catch (e) {
       console.error("Failed to load campaigns:", e);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [filter, page]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const filteredCampaigns = campaigns.filter(c => filter === "ALL" || c.status === filter);
+  const handleFilterChange = (newFilter) => {
+    if (newFilter !== filter) {
+      setFilter(newFilter);
+      setPage(1);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -42,25 +51,25 @@ export default function YCampaigns() {
 
       <div className="flex border-b border-slate-200">
         <button 
-          onClick={() => setFilter("ALL")}
+          onClick={() => handleFilterChange("ALL")}
           className={`px-5 py-3 text-sm font-bold transition-all border-b-2 ${filter === "ALL" ? "border-teal-500 text-teal-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
         >
           Semua
         </button>
         <button 
-          onClick={() => setFilter("ACTIVE")}
+          onClick={() => handleFilterChange("ACTIVE")}
           className={`px-5 py-3 text-sm font-bold transition-all border-b-2 ${filter === "ACTIVE" ? "border-teal-500 text-teal-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
         >
           Aktif
         </button>
         <button 
-          onClick={() => setFilter("EVALUATING")}
+          onClick={() => handleFilterChange("EVALUATING")}
           className={`px-5 py-3 text-sm font-bold transition-all border-b-2 ${filter === "EVALUATING" ? "border-teal-500 text-teal-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
         >
           Butuh Persetujuan
         </button>
         <button 
-          onClick={() => setFilter("FROZEN")}
+          onClick={() => handleFilterChange("FROZEN")}
           className={`px-5 py-3 text-sm font-bold transition-all border-b-2 ${filter === "FROZEN" ? "border-teal-500 text-teal-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
         >
           Ditolak
@@ -87,7 +96,7 @@ export default function YCampaigns() {
             </div>
           ))}
         </div>
-      ) : filteredCampaigns.length === 0 ? (
+      ) : campaigns.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
           <p className="text-slate-500 font-medium">Tidak ada kampanye untuk kategori ini.</p>
           <Link to="/y/campaigns/create" className="inline-block mt-4 px-4 py-2 bg-teal-50 text-teal-600 font-semibold rounded-lg hover:bg-teal-100 transition-colors text-sm">
@@ -95,13 +104,14 @@ export default function YCampaigns() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCampaigns.map((c) => {
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {campaigns.map((c) => {
             // Mock or calculate missing data for UI
             const target = Number(c.targetAmount) || 0;
             const collected = c.collectedAmount ? Number(c.collectedAmount) : 0; // if backend provides it
             const percentage = target > 0 ? Math.min(Math.round((collected / target) * 100), 100) : 0;
-            const donors = c.donations ? c.donations.length : 0;
+            const donors = c.donorCount || (c.donations ? c.donations.length : 0);
             const isCompleted = percentage >= 100;
             
             return (
@@ -121,6 +131,29 @@ export default function YCampaigns() {
             );
           })}
         </div>
+        
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-8">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Sebelumnya
+            </button>
+            <span className="text-sm font-medium text-slate-500 px-2">
+              Halaman {page} dari {pagination.totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+              disabled={page === pagination.totalPages}
+              className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Selanjutnya
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

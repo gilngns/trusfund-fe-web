@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Lenis from "lenis";
 import { Menu, X, ArrowRight } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import "./PublicLayout.css";
 
 const NAV_LINKS = [
@@ -12,6 +13,7 @@ const NAV_LINKS = [
 ];
 
 export default function PublicLayout({ children, scrollLocked = false }) {
+  const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const lenisRef = useRef(null);
@@ -104,9 +106,15 @@ export default function PublicLayout({ children, scrollLocked = false }) {
             )}
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/login" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 px-4 py-2 rounded-lg transition-all duration-200">
-              Masuk <ArrowRight size={14} />
-            </Link>
+            {user ? (
+              <Link to={user.role === "FOUNDATION" ? "/y/dashboard" : "/dashboard"} className="inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-all duration-200">
+                Dashboard <ArrowRight size={14} />
+              </Link>
+            ) : (
+              <Link to="/login" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 border border-slate-300 hover:border-blue-500 hover:text-blue-600 px-4 py-2 rounded-lg transition-all duration-200">
+                Masuk <ArrowRight size={14} />
+              </Link>
+            )}
           </div>
           <button className="md:hidden p-2 text-slate-600" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu">
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -122,8 +130,16 @@ export default function PublicLayout({ children, scrollLocked = false }) {
               )
             ))}
             <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
-              <Link to="/login" className="text-sm font-semibold text-slate-700 py-2">Masuk</Link>
-              <Link to="/register" className="text-sm font-semibold text-white bg-blue-600 px-4 py-2.5 rounded-lg text-center">Daftarkan Yayasan</Link>
+              {user ? (
+                <Link to={user.role === "FOUNDATION" ? "/y/dashboard" : "/dashboard"} className="text-sm font-semibold text-white bg-blue-600 px-4 py-2.5 rounded-lg text-center">
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="text-sm font-semibold text-slate-700 py-2">Masuk</Link>
+                  <Link to="/register" className="text-sm font-semibold text-white bg-blue-600 px-4 py-2.5 rounded-lg text-center">Daftarkan Yayasan</Link>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -161,8 +177,14 @@ export default function PublicLayout({ children, scrollLocked = false }) {
           <div>
             <div className="text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">Portal</div>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/login" className="text-slate-600 hover:text-slate-900 transition-colors">Masuk Dashboard</Link></li>
-              <li><Link to="/register" className="text-slate-600 hover:text-slate-900 transition-colors">Daftarkan Yayasan</Link></li>
+              {user ? (
+                <li><Link to={user.role === "FOUNDATION" ? "/y/dashboard" : "/dashboard"} className="text-slate-600 hover:text-slate-900 transition-colors">Dashboard</Link></li>
+              ) : (
+                <>
+                  <li><Link to="/login" className="text-slate-600 hover:text-slate-900 transition-colors">Masuk Dashboard</Link></li>
+                  <li><Link to="/register" className="text-slate-600 hover:text-slate-900 transition-colors">Daftarkan Yayasan</Link></li>
+                </>
+              )}
             </ul>
           </div>
           <div>

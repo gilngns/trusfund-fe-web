@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, CircleDashed, Users, Target, Activity, Check, Banknote, HelpCircle, Camera, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, CircleDashed, Users, Target, Activity, Check, Banknote, HelpCircle, Camera, Loader2, Heart, User } from "lucide-react";
 import Swal from "sweetalert2";
 import { campaignApi } from "../../api/client";
 import { rp } from "../../api/format";
@@ -143,6 +143,10 @@ export default function YCampaignDetail() {
   const collectedAmount = campaign.collectedAmount ? Number(campaign.collectedAmount) : 0;
   const percentage = targetAmount > 0 ? Math.min(Math.round((collectedAmount / targetAmount) * 100), 100) : 0;
   
+  // Calculate unique donors based on successful donations
+  const successfulDonations = (campaign.donations || []).filter(d => ["PAID", "DEPOSITED"].includes(d.status));
+  const uniqueDonorsCount = new Set(successfulDonations.map(d => d.donorId || d.donorName || d.donorAddress || d.id)).size;
+  
   const statusColor = {
     ACTIVE: "bg-blue-100 text-blue-700 border-blue-200",
     FROZEN: "bg-red-100 text-red-700 border-red-200",
@@ -167,7 +171,9 @@ export default function YCampaignDetail() {
               {campaign.status}
             </span>
           </div>
-
+          <div className="text-sm text-slate-500 font-mono mt-1 flex items-center gap-2">
+            <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">ID: {campaign.id || id}</span>
+          </div>
         </div>
       </div>
 
@@ -281,7 +287,7 @@ export default function YCampaignDetail() {
             
             <div className="flex justify-between text-xs font-bold text-slate-500 mb-6">
               <span>{percentage}%</span>
-              <span className="flex items-center gap-1"><Users size={12}/> {campaign.donations?.length || 0} Donatur</span>
+              <span className="flex items-center gap-1"><Users size={12}/> {uniqueDonorsCount} Donatur</span>
             </div>
 
             <div className="space-y-2 pt-4 border-t border-slate-100">
@@ -293,6 +299,65 @@ export default function YCampaignDetail() {
                 <span className="text-slate-500 font-medium">Dana Milestone</span>
                 <span className="font-bold text-slate-800">{rp(milestoneAmount)}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Riwayat Donasi (Compact Version) */}
+          <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200 shadow-lg shadow-slate-200/40 overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+            <div className="p-6 relative z-10">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-teal-500/20 shrink-0">
+                  <Heart size={20} className="fill-white/20" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-800 leading-tight">Riwayat Donasi</h3>
+                  <p className="text-[11px] text-slate-500 leading-tight mt-0.5">Donatur di kampanye ini</p>
+                </div>
+              </div>
+              
+              {campaign.donations && campaign.donations.length > 0 ? (
+                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1.5 custom-scrollbar">
+                  {campaign.donations.map((donation, index) => (
+                    <div 
+                      key={donation.id || index} 
+                      className="group flex flex-col p-3.5 rounded-xl border border-slate-100/80 bg-white hover:bg-slate-50 hover:border-teal-100 hover:shadow-sm hover:shadow-teal-500/5 transition-all duration-300"
+                    >
+                      <div className="flex items-start gap-3 mb-2.5">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-500 transition-colors shrink-0">
+                          <User size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-[13px] text-slate-800 group-hover:text-teal-700 transition-colors truncate">{donation.donorName || "Hamba Allah"}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">{new Date(donation.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} WIB</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-slate-100/80 pt-2.5">
+                        <div className="font-black text-slate-800 text-sm">{rp(donation.amount)}</div>
+                        <div className={`text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center ${
+                          donation.status === 'PAID' || donation.status === 'DEPOSITED' 
+                            ? 'text-emerald-700 bg-emerald-100/80 border border-emerald-200' 
+                            : donation.status === 'PENDING' 
+                            ? 'text-amber-700 bg-amber-100/80 border border-amber-200' 
+                            : donation.status === 'FAILED' 
+                            ? 'text-red-700 bg-red-100/80 border border-red-200' 
+                            : 'text-slate-600 bg-slate-100 border border-slate-200'
+                        }`}>
+                          {donation.status === 'DEPOSITED' ? 'TERALOKASI' : donation.status === 'PAID' ? 'BERHASIL' : donation.status}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-6 px-4 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-2 shadow-sm">
+                    <Heart size={20} className="text-slate-300" />
+                  </div>
+                  <div className="font-bold text-sm text-slate-700 mb-1">Belum Ada Donatur</div>
+                  <p className="text-[10px] text-slate-500 max-w-xs">Jadilah yang pertama untuk berkontribusi.</p>
+                </div>
+              )}
             </div>
           </div>
 

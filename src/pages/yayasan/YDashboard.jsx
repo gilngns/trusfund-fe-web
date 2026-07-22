@@ -1,16 +1,46 @@
-import { Wallet, Users, LayoutList, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Wallet, Users, LayoutList, TrendingUp, Loader2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-const data = [
-  { name: 'Jan', total: 4000 },
-  { name: 'Feb', total: 3000 },
-  { name: 'Mar', total: 5000 },
-  { name: 'Apr', total: 4500 },
-  { name: 'May', total: 6000 },
-  { name: 'Jun', total: 5500 },
-];
+import { api } from "../../api/client";
 
 export default function YDashboard() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const res = await api.get('/dashboard/foundation');
+        if (res.ok) {
+          setData(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard data", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-slate-400">
+        <Loader2 className="w-8 h-8 animate-spin mb-4" />
+        <p>Memuat data dashboard...</p>
+      </div>
+    );
+  }
+
+  const dashboardData = data || {
+    totalDonasi: "Rp 0",
+    penerimaManfaat: "0",
+    programAktif: "0",
+    tingkatKeberhasilan: "0%",
+    grafikDonasi: [],
+    trends: { donasi: "0%", penerima: "0%", program: "0%", keberhasilan: "0%" }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -19,10 +49,10 @@ export default function YDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Donasi" value="Rp 45.5M" icon={Wallet} trend="+12.5%" />
-        <StatCard title="Penerima Manfaat" value="1,240" icon={Users} trend="+5.2%" />
-        <StatCard title="Program Aktif" value="12" icon={LayoutList} trend="0%" />
-        <StatCard title="Tingkat Keberhasilan" value="94%" icon={TrendingUp} trend="+2.1%" />
+        <StatCard title="Total Donasi" value={(dashboardData.totalDonasi || "").replace('M', ' Juta').replace('B', ' Miliar')} icon={Wallet} trend={dashboardData.trends?.donasi || "0%"} />
+        <StatCard title="Penerima Manfaat" value={dashboardData.penerimaManfaat} icon={Users} trend={dashboardData.trends?.penerima || "0%"} />
+        <StatCard title="Program Aktif" value={dashboardData.programAktif} icon={LayoutList} trend={dashboardData.trends?.program || "0%"} />
+        <StatCard title="Tingkat Keberhasilan" value={dashboardData.tingkatKeberhasilan} icon={TrendingUp} trend={dashboardData.trends?.keberhasilan || "0%"} />
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -31,7 +61,7 @@ export default function YDashboard() {
         </div>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={dashboardData.grafikDonasi} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#0d9488" stopOpacity={0.3}/>
@@ -40,10 +70,21 @@ export default function YDashboard() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#64748b', fontSize: 12 }}
+                tickFormatter={(value) => {
+                  if (value >= 1000000000) return `${(value / 1000000000).toFixed(1)} Miliar`;
+                  if (value >= 1000000) return `${(value / 1000000).toFixed(1)} Juta`;
+                  if (value >= 1000) return `${(value / 1000).toFixed(1)} Rb`;
+                  return value;
+                }}
+              />
               <Tooltip 
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
+                formatter={(value) => [`Rp ${value.toLocaleString('id-ID')}`, 'Total']}
               />
               <Area type="monotone" dataKey="total" stroke="#0d9488" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
             </AreaChart>

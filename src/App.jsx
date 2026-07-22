@@ -46,10 +46,7 @@ function RedirectBasedOnRole({ type }) {
 }
 
 function HomeRoute() {
-  const { user } = useAuth();
-  if (!user) return <Landing />;
-  if (user.role === "FOUNDATION") return <Navigate to="/y/dashboard" replace />;
-  return <Navigate to="/dashboard" replace />;
+  return <Landing />;
 }
 
 export default function App() {

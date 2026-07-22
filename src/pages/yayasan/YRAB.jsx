@@ -7,18 +7,22 @@ import { rp } from "../../api/format";
 export default function YRAB() {
   const [campaigns, setCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const limit = 10;
 
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await campaignApi.list();
+      const res = await campaignApi.list(null, page, limit);
       setCampaigns(res.campaigns || []);
+      setPagination(res.pagination || null);
     } catch (e) {
       console.error("Failed to load campaigns:", e);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -64,16 +68,39 @@ export default function YRAB() {
           ) : campaigns.length === 0 ? (
             <div className="p-8 text-center text-sm text-slate-500">Tidak ada dokumen RAB.</div>
           ) : (
-            campaigns.map((c) => (
-              <RABItem 
-                key={c.id}
-                id={c.id}
-                title={`RAB ${c.title}`} 
-                status={c.status} 
-                total={rp(c.targetAmount)} 
-                date={`Dibuat: ${new Date(c.createdAt).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}`} 
-              />
-            ))
+            <>
+              {campaigns.map((c) => (
+                <RABItem 
+                  key={c.id}
+                  id={c.id}
+                  title={`RAB ${c.title}`} 
+                  status={c.status} 
+                  total={rp(c.targetAmount)} 
+                  date={`Dibuat: ${new Date(c.createdAt).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}`} 
+                />
+              ))}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="p-4 flex justify-center items-center gap-2 border-t border-slate-100">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Sebelumnya
+                  </button>
+                  <span className="text-sm font-medium text-slate-500 px-2">
+                    Halaman {page} dari {pagination.totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                    disabled={page === pagination.totalPages}
+                    className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

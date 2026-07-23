@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, BrainCircuit, Save, Loader2, Info, PlusCircle, Trash2, Calendar, UploadCloud, X, CheckCircle2, Search, MapPin } from "lucide-react";
 import Swal from "sweetalert2";
@@ -15,8 +15,19 @@ export default function YCreateCampaign() {
   const [imagePreview, setImagePreview] = useState(null);
   const [createdCampaignStatus, setCreatedCampaignStatus] = useState(null);
 
+  // Helper to load from localStorage
+  const loadStoredData = (key, defaultData) => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.warn("Failed to parse stored data", e);
+    }
+    return defaultData;
+  };
+
   // Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => loadStoredData('draft_campaign_form', {
     title: "",
     description: "",
     targetAmount: "",
@@ -27,7 +38,7 @@ export default function YCreateCampaign() {
     latitude: -6.200000,
     longitude: 106.816666,
     izinPubFile: null,
-  });
+  }));
 
   // Map state
   const [mapCenter, setMapCenter] = useState([-6.200000, 106.816666]);
@@ -36,40 +47,181 @@ export default function YCreateCampaign() {
   const [isSearchingMap, setIsSearchingMap] = useState(false);
 
   // Dynamic RAB State
-  const [rabItems, setRabItems] = useState([
+  const [rabItems, setRabItems] = useState(() => loadStoredData('draft_campaign_rab', [
     { item: "Semen", harga: 50000, qty: 100, unit: "sak" },
     { item: "Batu Bata", harga: 1000, qty: 5000, unit: "biji" }
-  ]);
+  ]));
+
+  useEffect(() => {
+    const dataToSave = { ...formData };
+    delete dataToSave.izinPubFile; // Cannot serialize File objects
+    localStorage.setItem('draft_campaign_form', JSON.stringify(dataToSave));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem('draft_campaign_rab', JSON.stringify(rabItems));
+  }, [rabItems]);
 
   // Plan result from AI
   const [planResult, setPlanResult] = useState(null);
+  
+  // New Milestone Mode States
+  const [milestoneMode, setMilestoneMode] = useState("AI"); // "HARDCODE" | "CUSTOM" | "AI"
+  const [hardcodeMilestones, setHardcodeMilestones] = useState(3);
+  const [customMilestones, setCustomMilestones] = useState([{ title: "Tahap 1", percentage: 50 }, { title: "Tahap 2", percentage: 50 }]);
+  const [dpPercentage, setDpPercentage] = useState(15);
+  const [isValidatingCustom, setIsValidatingCustom] = useState(false);
+  const [customValidationResult, setCustomValidationResult] = useState(null);
+  
+  const [rabEvaluationResult, setRabEvaluationResult] = useState(null);
+  const [isEvaluatingRAB, setIsEvaluatingRAB] = useState(false);
+
+  useEffect(() => {
+    // Reset AI evaluation if RAB data changes
+    setRabEvaluationResult(null);
+    setPlanResult(null);
+  }, [rabItems]);
+
+  const handleNextToMilestone = async () => {
+    if (!formData.targetAmount || rabItems.length === 0) {
+      Swal.fire("Peringatan", "Lengkapi target dana dan minimal 1 item RAB", "warning");
+      return;
+    }
+    if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.unit.trim())) {
+      Swal.fire("Peringatan", "Pastikan semua baris RAB diisi dengan benar, termasuk satuan", "warning");
+      return;
+    }
+    
+    const totalRab = rabItems.reduce((acc, curr) => acc + ((Number(curr.harga) || 0) * (Number(curr.qty) || 0)), 0);
+    if (totalRab !== Number(formData.targetAmount)) {
+      Swal.fire(
+        "RAB Tidak Sesuai", 
+        `Total pengeluaran RAB (${rp(totalRab)}) tidak sama dengan Target Dana (${rp(Number(formData.targetAmount))}). Silakan sesuaikan agar jumlahnya sama persis.`, 
+        "warning"
+      );
+      return;
+    }
+    
+    if (!rabEvaluationResult) {
+      try {
+        Swal.fire({
+          title: "Mengevaluasi RAB...",
+          text: "AI sedang menganalisis kewajaran harga dan kebutuhan RAB Anda. Mohon tunggu sebentar.",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+
+        const res = await campaignApi.planDraft({
+          targetAmount: Number(formData.targetAmount),
+          durationDays: Number(formData.durationDays),
+          rabData: rabItems,
+          title: formData.title,
+          category: formData.category,
+          description: formData.description,
+          latitude: formData.latitude,
+          longitude: formData.longitude
+        });
+
+        setRabEvaluationResult({ score: res.plan.aiScore, notes: res.plan.notes });
+        
+        const result = await Swal.fire({
+          title: `Skor RAB Anda: ${res.plan.aiScore}`,
+          text: res.plan.notes,
+          icon: res.plan.aiScore >= 70 ? "success" : "warning",
+          showCancelButton: true,
+          confirmButtonText: "Lanjut ke Skema Pencairan",
+          cancelButtonText: "Edit RAB Lagi",
+          confirmButtonColor: "#0f766e",
+          cancelButtonColor: "#64748b",
+          allowOutsideClick: false
+        });
+        
+        if (result.isConfirmed) {
+          setStep(2);
+        }
+      } catch (e) {
+        Swal.fire("Error", "Gagal mengevaluasi RAB dengan AI: " + e.message, "error");
+      }
+    } else {
+      setStep(2);
+    }
+  };
+
+  const handleEvaluateRAB = async () => {
+    try {
+      setIsEvaluatingRAB(true);
+      const res = await campaignApi.planDraft({
+        targetAmount: Number(formData.targetAmount),
+        durationDays: Number(formData.durationDays),
+        rabData: rabItems,
+        title: formData.title,
+        category: formData.category,
+        description: formData.description,
+        latitude: formData.latitude,
+        longitude: formData.longitude
+      });
+      setRabEvaluationResult({ score: res.plan.aiScore, notes: res.plan.notes });
+      Swal.fire("Selesai", "RAB berhasil dievaluasi.", "success");
+    } catch (e) {
+      Swal.fire("Error", e.message, "error");
+    } finally {
+      setIsEvaluatingRAB(false);
+    }
+  };
 
   const handleAnalyze = async () => {
     try {
-      if (!formData.targetAmount || rabItems.length === 0) {
-        Swal.fire("Peringatan", "Lengkapi target dana dan minimal 1 item RAB", "warning");
-        return;
-      }
-      
-      // Validasi item kosong
-if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.unit.trim())) {
-        Swal.fire("Peringatan", "Pastikan semua baris RAB diisi dengan benar, termasuk satuan", "warning");
-        return;
-      }
-
       setIsAnalyzing(true);
-      
-      const res = await campaignApi.planDraft({
+      const payload = {
         targetAmount: Number(formData.targetAmount),
+        durationDays: Number(formData.durationDays),
         rabData: rabItems,
-      });
-
-      setPlanResult(res.plan);
-      setStep(2);
+        title: formData.title,
+        category: formData.category,
+        description: formData.description,
+        latitude: formData.latitude,
+        longitude: formData.longitude
+      };
+      
+      const res = await campaignApi.planMilestones(payload);
+      const plan = res.plan || res;
+      setPlanResult(plan);
     } catch (e) {
       Swal.fire("Error", e.message, "error");
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleValidateCustom = async () => {
+    try {
+      setIsValidatingCustom(true);
+      
+      // Calculate amounts from percentages
+      const targetAmt = Number(formData.targetAmount);
+      const dpAmount = Math.floor(targetAmt * (dpPercentage / 100));
+      const msAmount = targetAmt - dpAmount;
+      
+      const formattedMilestones = customMilestones.map((m, i) => ({
+        order: i + 1,
+        title: m.title,
+        amount: Math.floor(msAmount * (m.percentage / 100))
+      }));
+
+      const payload = {
+        targetAmount: targetAmt,
+        advanceAmount: dpAmount,
+        milestones: formattedMilestones,
+        rabData: rabItems
+      };
+      
+      const res = await campaignApi.validateMilestoneStructure(payload);
+      setCustomValidationResult({ score: res.score || 85, notes: res.notes || "Struktur milestone valid." });
+      Swal.fire("Berhasil", "Validasi struktur milestone selesai.", "success");
+    } catch (e) {
+      Swal.fire("Error", e.message, "error");
+    } finally {
+      setIsValidatingCustom(false);
     }
   };
 
@@ -127,29 +279,85 @@ if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.un
         });
       }
       
+      let advanceAmount = 0;
+      let milestoneAmount = 0;
+      let totalMilestones = 2;
+      let aiScore = 0;
+      let aiNotes = "";
+      let milestones = undefined;
+
+      const targetAmt = Number(formData.targetAmount);
+
+      if (milestoneMode === "AI") {
+        if (!planResult) throw new Error("Silakan jalankan analisis AI terlebih dahulu");
+        advanceAmount = planResult.advanceAmount;
+        milestoneAmount = planResult.milestoneAmount;
+        totalMilestones = planResult.totalMilestones || (planResult.milestones ? planResult.milestones.length : 3);
+        milestones = planResult.milestones;
+        aiScore = planResult.aiScore || planResult.score;
+        aiNotes = planResult.notes;
+      } else if (milestoneMode === "HARDCODE") {
+        advanceAmount = Math.floor(targetAmt * (dpPercentage / 100));
+        milestoneAmount = targetAmt - advanceAmount;
+        totalMilestones = hardcodeMilestones;
+        aiNotes = "Menggunakan skema hardcode (Progressive Retention).";
+        if (rabEvaluationResult) {
+          aiScore = rabEvaluationResult.score;
+          aiNotes += `\n\nAI Review RAB: ${rabEvaluationResult.notes}`;
+        }
+      } else if (milestoneMode === "CUSTOM") {
+        advanceAmount = Math.floor(targetAmt * (dpPercentage / 100));
+        milestoneAmount = targetAmt - advanceAmount;
+        totalMilestones = customMilestones.length;
+        milestones = customMilestones.map((m, i) => ({
+          order: i + 1,
+          title: m.title,
+          percentage: m.percentage
+        }));
+        aiNotes = "Menggunakan skema pencairan kustom yang diatur oleh yayasan.";
+        
+        let combinedNotes = [];
+        let finalScore = 0;
+        
+        if (rabEvaluationResult) {
+          finalScore = rabEvaluationResult.score;
+          combinedNotes.push(`AI Review RAB: ${rabEvaluationResult.notes}`);
+        }
+        if (customValidationResult?.score) {
+          finalScore = Math.floor((finalScore + customValidationResult.score) / (rabEvaluationResult ? 2 : 1));
+          combinedNotes.push(`AI Review Milestone: ${customValidationResult.notes}`);
+        }
+        
+        if (finalScore > 0) aiScore = finalScore;
+        if (combinedNotes.length > 0) aiNotes += `\n\n` + combinedNotes.join("\n\n");
+      }
+
       const response = await campaignApi.create({
         onChainId,
         title: formData.title,
         description: formData.description,
-        targetAmount: Number(formData.targetAmount),
+        targetAmount: targetAmt,
         durationDays: Number(formData.durationDays),
         category: formData.category,
         imageUrl: finalImageUrl,
-        advanceAmount: planResult.advanceAmount,
-        milestoneAmount: planResult.milestoneAmount,
-        totalMilestones: planResult.totalMilestones,
+        advanceAmount,
+        milestoneAmount,
+        totalMilestones,
+        milestones,
         rabCID: "QmTestRabData123",
         latitude: formData.latitude,
         longitude: formData.longitude,
         izinPub: finalIzinPubUrl || (formData.izinPub ? formData.izinPub.trim() : undefined),
-        aiScore: planResult.aiScore,
-        aiNotes: planResult.notes,
+        aiScore,
+        aiNotes,
         rabData: rabItems,
       });
 
       if (response && response.campaign) {
         setCreatedCampaignStatus(response.campaign.status);
       }
+      localStorage.removeItem('draft_campaign_form');
+      localStorage.removeItem('draft_campaign_rab');
       setStep(3);
     } catch (e) {
       Swal.fire("Error", e.message, "error");
@@ -190,8 +398,8 @@ if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.un
             <div className="flex items-start gap-3 relative z-10">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 ${step >= 2 ? 'bg-teal-500 border-teal-500 text-white' : 'bg-white border-slate-300 text-slate-400'}`}>2</div>
               <div>
-                <div className={`font-bold ${step >= 2 ? 'text-slate-800' : 'text-slate-500'}`}>Analisis AI</div>
-                <div className="text-xs text-slate-500 mt-0.5">Review skema dana</div>
+                <div className={`font-bold ${step >= 2 ? 'text-slate-800' : 'text-slate-500'}`}>Skema Pencairan</div>
+                <div className="text-xs text-slate-500 mt-0.5">Atur milestone & dana</div>
               </div>
             </div>
             
@@ -456,11 +664,12 @@ if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.un
                     <table className="w-full text-left text-sm">
                       <thead className="bg-white border-b border-slate-200 text-slate-600 sticky top-0 z-10">
                         <tr>
-                          <th className="px-4 py-3 font-bold w-5/12">Nama Item/Kebutuhan</th>
-                          <th className="px-4 py-3 font-bold w-3/12">Harga Satuan (Rp)</th>
+                          <th className="px-4 py-3 font-bold w-4/12">Nama Item/Kebutuhan</th>
+                          <th className="px-4 py-3 font-bold w-2/12">Harga Satuan (Rp)</th>
                           <th className="px-4 py-3 font-bold w-2/12">Kuantitas</th>
                           <th className="px-4 py-3 font-semibold w-2/12">Satuan</th>
-                          <th className="px-4 py-3 font-bold w-2/12 text-center">Aksi</th>
+                          <th className="px-4 py-3 font-bold w-2/12 text-right">Subtotal</th>
+                          <th className="px-4 py-3 font-bold w-1/12 text-center">Aksi</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 bg-white">
@@ -518,6 +727,9 @@ if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.un
                                 className="w-full px-3 py-1.5 bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-lg outline-none transition-all text-slate-800 text-sm placeholder:text-slate-400"
                               />
                             </td>
+                            <td className="p-2 text-right pr-4 text-xs font-bold text-slate-700 bg-slate-50/50">
+                              {rp((Number(row.harga) || 0) * (Number(row.qty) || 0))}
+                            </td>
                             <td className="p-2 text-center">
                               <button 
                                 onClick={() => setRabItems(rabItems.filter((_, i) => i !== idx))}
@@ -533,6 +745,33 @@ if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.un
                     </table>
                   </div>
 
+                  {(() => {
+                    const totalRab = rabItems.reduce((acc, curr) => acc + ((Number(curr.harga) || 0) * (Number(curr.qty) || 0)), 0);
+                    const targetAmt = Number(formData.targetAmount) || 0;
+                    const isMatch = totalRab === targetAmt && targetAmt > 0;
+                    return (
+                      <div className={`mt-4 p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 text-sm transition-all ${isMatch ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+                        <div>
+                          <div className="font-semibold mb-1">Status RAB vs Target Dana</div>
+                          <div className="text-xs opacity-90">
+                            {isMatch ? "Total RAB sudah sesuai dengan Target Dana." : "Total pengeluaran RAB harus sama persis dengan Target Dana."}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-right">
+                          <div>
+                            <div className="text-xs opacity-80">Total RAB</div>
+                            <div className="font-bold text-base">{rp(totalRab)}</div>
+                          </div>
+                          <div className="text-xl opacity-50 font-light">/</div>
+                          <div>
+                            <div className="text-xs opacity-80">Target Dana</div>
+                            <div className="font-bold text-base">{rp(targetAmt)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
                     <button 
                       onClick={() => setActiveTab("location")} 
@@ -541,12 +780,10 @@ if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.un
                       <ArrowLeft size={16} /> Kembali ke Lokasi
                     </button>
                     <button 
-                      onClick={handleAnalyze}
-                      disabled={isAnalyzing}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/30 disabled:opacity-70 disabled:cursor-not-allowed"
+                      onClick={handleNextToMilestone}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-teal-600 text-white text-sm font-bold rounded-xl hover:bg-teal-700 transition-all shadow-md shadow-teal-500/30"
                     >
-                      {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <BrainCircuit size={16} />}
-                      {isAnalyzing ? "Memproses..." : "Jalankan Analisis AI"}
+                      Selanjutnya: Skema Pencairan <ArrowLeft size={16} className="rotate-180" />
                     </button>
                   </div>
                 </div>
@@ -554,44 +791,220 @@ if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.un
             </div>
           )}
 
-          {step === 2 && planResult && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col h-full">
-              <div className="flex-1">
-                <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-5 flex gap-4 items-start mb-6">
-                  <div className="p-2.5 bg-indigo-100 rounded-xl shrink-0 shadow-inner">
-                    <BrainCircuit className="text-indigo-600" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-indigo-900 text-lg">Hasil Analisis Pencairan Dana</h3>
-                    <p className="text-indigo-700/80 mt-1 text-sm leading-relaxed">{planResult.notes || "AI telah mengkalkulasi skema pencairan dana terbaik berdasarkan RAB Anda untuk meminimalkan risiko."}</p>
-                  </div>
+          {step === 2 && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 flex flex-col h-full overflow-y-auto custom-scrollbar">
+              <div className="flex-1 pb-6">
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Skema Pencairan Dana</h2>
+                <p className="text-sm text-slate-500 mb-6">Pilih mode skema milestone yang sesuai dengan kebutuhan kampanye Anda.</p>
+                
+                {/* Mode Selector */}
+                <div className="flex gap-3 mb-6 bg-slate-50 p-1.5 rounded-xl border border-slate-200 shrink-0">
+                  <button 
+                    onClick={() => setMilestoneMode("HARDCODE")}
+                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${milestoneMode === "HARDCODE" ? "bg-white text-slate-800 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    Otomatis
+                  </button>
+                  <button 
+                    onClick={() => setMilestoneMode("CUSTOM")}
+                    className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${milestoneMode === "CUSTOM" ? "bg-white text-slate-800 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    Custom Sendiri
+                  </button>
+                  <button 
+                    onClick={() => setMilestoneMode("AI")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${milestoneMode === "AI" ? "bg-white text-indigo-700 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    <BrainCircuit size={16} /> Rekomendasi AI
+                  </button>
                 </div>
 
-                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                  <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                    <span className="font-bold text-slate-800">Skema Tahapan (Milestone)</span>
-                    <span className="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-xs font-bold">Total: {planResult.totalMilestones} Tahap</span>
-                  </div>
-                  <div className="divide-y divide-slate-100 bg-white">
-                    <div className="p-5 flex justify-between items-center hover:bg-slate-50/50 transition-colors">
-                      <div>
-                        <div className="font-bold text-slate-800">Uang Muka (DP)</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Pencairan pertama saat kampanye sukses mencapai target</div>
-                      </div>
-                      <div className="font-black text-indigo-600 text-xl">{rp(planResult.advanceAmount)}</div>
+                {/* Hardcode Mode */}
+                {milestoneMode === "HARDCODE" && (
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 animate-in fade-in duration-300">
+                    <div className="mb-3">
+                      <h3 className="font-bold text-slate-800 text-sm mb-0.5">Skema Otomatis (Progressive Retention)</h3>
+                      <p className="text-xs text-slate-500">Dana dibagi secara progresif dimana tahapan akhir menerima porsi pencairan terbesar.</p>
                     </div>
-                    <div className="p-5 flex justify-between items-center hover:bg-slate-50/50 transition-colors">
+                    
+                    <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-lg mb-4 flex items-start gap-3">
+                      <div className="font-semibold text-slate-700 text-xs whitespace-nowrap mt-0.5">Evaluasi AI pada RAB:</div>
+                      <div className="font-bold text-indigo-900 text-[10px] bg-indigo-100 px-2 py-0.5 rounded mt-0.5 shrink-0">Skor: {rabEvaluationResult?.score}</div>
+                      <div className="text-indigo-800/80 text-[11px] flex-1 leading-relaxed">{rabEvaluationResult?.notes}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="font-bold text-slate-800">Sisa Dana (Milestones)</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Dicairkan secara bertahap setelah bukti pengerjaan disetujui</div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">Uang Muka (DP) %</label>
+                        <input 
+                          type="number" 
+                          value={dpPercentage}
+                          onChange={(e) => setDpPercentage(Number(e.target.value))}
+                          min="0" max="50"
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:bg-white focus:border-teal-500 transition-all text-slate-800 font-medium"
+                        />
                       </div>
-                      <div className="font-black text-slate-800 text-xl">{rp(planResult.milestoneAmount)}</div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1.5">Jumlah Milestone</label>
+                        <select 
+                          value={hardcodeMilestones}
+                          onChange={(e) => setHardcodeMilestones(Number(e.target.value))}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:bg-white focus:border-teal-500 transition-all text-slate-800 font-medium"
+                        >
+                          <option value={2}>2 Tahap</option>
+                          <option value={3}>3 Tahap</option>
+                          <option value={4}>4 Tahap</option>
+                          <option value={5}>5 Tahap</option>
+                          <option value={6}>6 Tahap</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Custom Mode */}
+                {milestoneMode === "CUSTOM" && (
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden animate-in fade-in duration-300 flex flex-col">
+                    <div className="p-4 border-b border-slate-200 shrink-0">
+                      <h3 className="font-bold text-slate-800 text-sm mb-0.5">Atur Skema Sendiri</h3>
+                      <p className="text-xs text-slate-500">Tentukan persentase DP dan persentase per milestone secara kustom.</p>
+                      
+                      <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-lg mt-3 flex items-start gap-3">
+                        <div className="font-semibold text-slate-700 text-xs whitespace-nowrap mt-0.5">Evaluasi AI pada RAB:</div>
+                        <div className="font-bold text-indigo-900 text-[10px] bg-indigo-100 px-2 py-0.5 rounded mt-0.5 shrink-0">Skor: {rabEvaluationResult?.score}</div>
+                        <div className="text-indigo-800/80 text-[11px] flex-1 leading-relaxed">{rabEvaluationResult?.notes}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 flex-1 flex gap-5">
+                      {/* Left Side */}
+                      <div className="w-1/3 flex flex-col gap-3">
+                        <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg shrink-0">
+                          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Uang Muka (DP) %</label>
+                          <input 
+                            type="number" 
+                            value={dpPercentage}
+                            onChange={(e) => setDpPercentage(Number(e.target.value))}
+                            min="0" max="100"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-teal-500 transition-all text-slate-800 font-medium"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Right Side (Milestones) */}
+                      <div className="flex-1 flex flex-col min-h-0 border border-slate-100 rounded-lg p-3">
+                        <div className="flex justify-between items-center mb-3 shrink-0">
+                          <label className="block text-xs font-semibold text-slate-700">Daftar Milestone (Sisa: {100 - dpPercentage}%)</label>
+                          <button 
+                            onClick={() => setCustomMilestones([...customMilestones, { title: `Tahap ${customMilestones.length + 1}`, percentage: 0 }])}
+                            className="text-[10px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                          >
+                            <PlusCircle size={12} /> Tambah
+                          </button>
+                        </div>
+                        
+                        <div className="flex flex-col gap-2 overflow-y-auto pr-1 custom-scrollbar min-h-[120px] max-h-[180px]">
+                          {customMilestones.map((ms, idx) => (
+                            <div key={idx} className="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                              <span className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0">{idx + 1}</span>
+                              <input 
+                                type="text" 
+                                value={ms.title}
+                                onChange={(e) => {
+                                  const newArr = [...customMilestones];
+                                  newArr[idx].title = e.target.value;
+                                  setCustomMilestones(newArr);
+                                }}
+                                placeholder="Tahapan"
+                                className="flex-1 px-2 py-1 bg-white border border-slate-200 rounded text-xs outline-none focus:border-teal-500 text-slate-800 font-medium"
+                              />
+                              <div className="relative w-16">
+                                <input 
+                                  type="number" 
+                                  value={ms.percentage}
+                                  onChange={(e) => {
+                                    const newArr = [...customMilestones];
+                                    newArr[idx].percentage = Number(e.target.value);
+                                    setCustomMilestones(newArr);
+                                  }}
+                                  className="w-full pl-2 pr-4 py-1 bg-white border border-slate-200 rounded text-xs outline-none focus:border-teal-500 text-right text-slate-800 font-medium"
+                                />
+                                <span className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 text-[9px] font-bold">%</span>
+                              </div>
+                              <button 
+                                onClick={() => setCustomMilestones(customMilestones.filter((_, i) => i !== idx))}
+                                className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {(() => {
+                          const totalPct = customMilestones.reduce((acc, curr) => acc + curr.percentage, 0);
+                          const isMatch = totalPct === 100;
+                          return (
+                            <div className={`mt-3 p-2 rounded-lg border flex items-center justify-between text-xs shrink-0 ${isMatch ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+                              <span className="font-semibold">Total Persentase:</span>
+                              <span className="font-bold">{totalPct}% / 100%</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Mode */}
+                {milestoneMode === "AI" && (
+                  <div className="bg-white border border-indigo-200 rounded-xl overflow-hidden shadow-sm shadow-indigo-100/50 animate-in fade-in duration-300">
+                    <div className="p-6 bg-gradient-to-br from-indigo-50 to-white text-center border-b border-indigo-100">
+                      <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-indigo-100 flex items-center justify-center mx-auto mb-4">
+                        <BrainCircuit size={32} className="text-indigo-600" />
+                      </div>
+                      <h3 className="font-bold text-slate-800 mb-2">Rekomendasi Berbasis AI</h3>
+                      <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                        Biarkan AI merumuskan skema milestone terbaik untuk meminimalkan risiko proyek.
+                      </p>
+                      <button 
+                        onClick={handleAnalyze}
+                        disabled={isAnalyzing || (planResult != null && !planResult.notes?.includes("[MOCK]"))}
+                        className="mt-5 flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/30 mx-auto disabled:opacity-70 disabled:cursor-not-allowed"
+                      >
+                        {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : (planResult && !planResult.notes?.includes("[MOCK]") ? <CheckCircle2 size={16} /> : <BrainCircuit size={16} />)}
+                        {isAnalyzing ? "Menganalisis..." : (planResult && !planResult.notes?.includes("[MOCK]") ? "Sudah Di-generate" : (planResult ? "Coba Generate Ulang" : "Generate Skema AI"))}
+                      </button>
+                      {planResult && (
+                        <p className="text-xs text-indigo-600 font-medium mt-3">Skema hanya dapat di-generate 1 kali</p>
+                      )}
+                    </div>
+
+                    {planResult && (
+                      <div className="p-6">
+                        <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 mb-5">
+                          <h4 className="font-bold text-indigo-900 text-sm mb-1">Hasil Analisis (Skor: {planResult.aiScore})</h4>
+                          <p className="text-indigo-700/80 text-xs leading-relaxed whitespace-pre-wrap">{planResult.notes}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="text-xs text-slate-500 mb-1">Uang Muka (DP)</div>
+                            <div className="font-black text-indigo-600 text-lg">{rp(planResult.advanceAmount)}</div>
+                          </div>
+                          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="text-xs text-slate-500 mb-1">Dana Milestone ({planResult.totalMilestones} Tahap)</div>
+                            <div className="font-black text-slate-800 text-lg">{rp(planResult.milestoneAmount)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               
-              <div className="flex justify-between items-center mt-6 pt-6 border-t border-slate-100 shrink-0">
+              {/* Navigation Actions for Step 2 */}
+              <div className="flex justify-between items-center mt-2 pt-4 border-t border-slate-100 shrink-0 sticky bottom-0 bg-white">
                 <button 
                   onClick={() => setStep(1)}
                   className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
@@ -600,8 +1013,8 @@ if (rabItems.some(r => !r.item || r.harga <= 0 || r.qty <= 0 || !r.unit || !r.un
                 </button>
                 <button 
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-teal-600 text-white text-sm font-bold rounded-xl hover:bg-teal-700 transition-all shadow-md shadow-teal-500/30 disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={isSubmitting || (milestoneMode === "CUSTOM" && customMilestones.reduce((a,c)=>a+c.percentage,0)!==100) || (milestoneMode === "AI" && !planResult)}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-teal-600 text-white text-sm font-bold rounded-xl hover:bg-teal-700 transition-all shadow-md shadow-teal-500/30 disabled:opacity-70 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                 >
                   {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {isSubmitting ? "Menyimpan..." : "Publikasikan Kampanye"}
